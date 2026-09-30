@@ -89,6 +89,34 @@
   var VACANCY_RU = 'Вакансия';
   var VACANCY_EN = 'Vacancy';
 
+  /* Page geometry in twips. All generated documents are landscape.
+   * `margin` is the value the department's own files use: 567tw = 1cm. */
+  var PAGE_SIZES = {
+    A4: { w: 16838, h: 11906, margin: 567 },
+    A3: { w: 23811, h: 16838, margin: 425 }
+  };
+  var DEFAULT_PAGE_SIZE = 'A4';
+
+  /* Column profile of the monthly document, measured from the department's own
+   * "2_Oktyabr_2026_G__1.doc":
+   *
+   *   [Номер недели][Время] + 6 days x [№ гр. | Ф.И.О. преподавателя | № ауд. | № темы]
+   *
+   * Widths are fractions of the usable text width so the identical table can be
+   * laid out on any supported page size. Measured A4 values were
+   * week 668tw, time 907tw, and per day roughly 468 / 1002 / 411 / 447. */
+  var MONTHLY_PROFILE = {
+    weekFrac: 0.043,
+    timeFrac: 0.058,
+    daySubFrac: [0.20, 0.43, 0.175, 0.195],
+    /* Which time blocks the monthly document shows. The department's file does
+     * contain the evening block (16.45-20.00): it appears at the end of weeks
+     * 5, 7 and 9 of 2_Oktyabr_2026_G__1.doc. In the reference those rows carry
+     * a plain (unmerged) Время cell rather than a vMerge, which is why a
+     * vMerge-only scan misses them. Keep all three blocks. */
+    blocks: ['M', 'A', 'E']
+  };
+
   SM.config = {
     DAYS_RU: DAYS_RU,
     DAYS_EN: DAYS_EN,
@@ -105,6 +133,9 @@
     TEACHER_ROOM_PREF: TEACHER_ROOM_PREF,
     VACANCY_RU: VACANCY_RU,
     VACANCY_EN: VACANCY_EN,
+    PAGE_SIZES: PAGE_SIZES,
+    DEFAULT_PAGE_SIZE: DEFAULT_PAGE_SIZE,
+    MONTHLY_PROFILE: MONTHLY_PROFILE,
 
     /* Semester calendar. Week 1 Monday = 2026-08-31.
      * NOTE: the source schedule references 10.02.2027 (week 24 Wednesday) in ranges

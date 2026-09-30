@@ -15,7 +15,7 @@
     tab: 'calendar',
     week: 1,
     docLang: 'ru',
-    pageSize: 'A3',
+    pageSize: C.DEFAULT_PAGE_SIZE,
     highlight: true,
     warnFilter: 'all',
     groupFilter: '',
@@ -25,8 +25,42 @@
     files: { weekly: C.files.weekly, monthly: 'Raspisanie_M_{month}_{year}.docx', zayavka: C.files.zayavka },
     rootFolder: C.output.rootFolder,
     weekFolderPrefix: C.output.weekFolderPrefix,
+    autoOpen: false,
+    saveAs: false,
     generated: null
   };
+
+  /* ------------------------------------------------------------- save path
+   *
+   * A browser cannot tell a page where it downloads files, and it refuses to
+   * open a local folder at all. So the destination is described, not resolved:
+   * we name the folder the ZIP will land in and keep a handle on the last blob
+   * we produced, which is what "open file" re-opens. Anything more precise
+   * would need the File System Access API, which is Chromium-only and cannot be
+   * relied on when index.html runs from file://.
+   */
+
+  var lastZipUrl = null, lastZipName = null, lastSavedPath = null;
+
+  function zipFileName() { return state.rootFolder + '.zip'; }
+
+  /* Best available description of where downloads go. */
+  function savePathLabel() {
+    return lastSavedPath || t('saveZipHint');
+  }
+
+  function renderSavePath() {
+    var box = $('#savePathBox');
+    if (!box) return;
+    $('#lblSaveTo').textContent = t('saveTo');
+    $('#savePathValue').textContent = zipFileName();
+    $('#savePathValue').title = zipFileName();
+    $('#savePathHint').textContent = savePathLabel();
+    var b = $('#openFolderBtn');
+    b.textContent = t('openFile');
+    // Only meaningful once something has actually been generated.
+    b.disabled = !lastZipUrl;
+  }
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -64,7 +98,7 @@
         lang: state.lang, theme: state.theme, semester: state.semester,
         rooms: state.rooms, files: state.files, rootFolder: state.rootFolder,
         weekFolderPrefix: state.weekFolderPrefix, docLang: state.docLang,
-        pageSize: state.pageSize, highlight: state.highlight,
+        pageSize: state.pageSize, highlight: state.highlight, autoOpen: state.autoOpen, saveAs: state.saveAs,
         fixed: C.FIXED_ROOMS, pref: C.TEACHER_ROOM_PREF
       }));
     } catch (e) { /* private mode - ignore */ }
@@ -73,7 +107,7 @@
     try {
       var s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
       if (!s) return;
-      ['lang', 'theme', 'docLang', 'pageSize', 'highlight', 'rootFolder', 'weekFolderPrefix'].forEach(function (k) {
+      ['lang', 'theme', 'docLang', 'pageSize', 'highlight', 'rootFolder', 'weekFolderPrefix', 'autoOpen', 'saveAs'].forEach(function (k) {
         if (s[k] !== undefined && s[k] !== null) state[k] = s[k];
       });
       if (s.semester) state.semester = s.semester;
@@ -598,6 +632,7 @@
   function renderFiles() {
     var host = $('#filesSummary');
     host.innerHTML = '';
+    renderSavePath();
     if (!state.model) return;
     var list = SM.package.flatList(state.model, genOpts());
     var counts = { weekly: 0, monthly: 0, zayavka: 0 };
@@ -651,6 +686,50 @@
     a.click();
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    return url;
+  }
+
+  /* Keep the blob alive so "open file" can re-open it, and offer to do that
+   * straight away when the user asked for it.
+   *
+   * The honest position: a page cannot verify that a download landed on disk.
+   * Browsers route it silently and some suppress it entirely, so we never claim
+   * the file "was saved" - we say what we did and point at where to look. */
+  function offerOpen(url, name) {
+    if (lastZipUrl) URL.revokeObjectURL(lastZipUrl);
+    lastZipUrl = url; lastZipName = name;
+    renderSavePath();
+
+    if (state.saveAs && typeof global.showSaveFilePicker === 'function') {
+      // Chromium: the user picks the folder, so the destination is known.
+      var pick = global.showSaveFilePicker({ suggestedName: name });
+      return pick.then(function (handle) {
+        return handle.createWritable()
+          .then(function (writable) { return writable.write(url).then(function () { return writable.close(); }); })
+          .then(function () {
+            lastSavedPath = handle.name;
+            renderSavePath();
+            toast(t('savedTo') + ': ' + handle.name, 'ok');
+            if (state.autoOpen) global.open(url, '_blank');
+            return true;
+          });
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') { toast(t('saveCancelled'), 'error'); return false; }
+        // Any other failure: the download has already been triggered, so say so
+        // rather than implying nothing happened.
+        lastSavedPath = null;
+        renderSavePath();
+        toast(t('savedToDownloads'), 'error');
+        return false;
+      });
+    }
+
+    toast(t('savedToDownloads'), 'ok');
+    if (state.autoOpen) {
+      var w = global.open(url, '_blank');
+      if (!w) toast(t('cannotOpenHint'), 'error');
+    }
+    return true;
   }
 
   function generateAll() {
@@ -669,7 +748,7 @@
         return res.zip.generateAsync({ type: 'blob' });
       })
       .then(function (blob) {
-        downloadBlob(blob, state.rootFolder + '.zip');
+        offerOpen(downloadBlob(blob, zipFileName()), zipFileName());
         toast(t('filesReady') + ': ' + res_count(), 'ok');
       })
       .catch(function (err) {
@@ -770,6 +849,10 @@
     $('#tFixed').textContent = t('fixedRooms');
     $('#tPref').textContent = t('teacherRooms');
     $('#treeTitle').textContent = t('generatedTree');
+    $('#savePathTitle').textContent = t('savePathTitle');
+    $('#lblOpenAfter').textContent = t('openAfter');
+    $('#lblSaveAs').textContent = t('saveAs');
+    renderSavePath();
     $('#recalcBtn').textContent = t('recalc');
     $('#unlockBtn').textContent = t('relockAll');
     $('#applySem').textContent = t('recalc');
@@ -919,6 +1002,15 @@
       });
     };
     $('#generateBtn').onclick = generateAll;
+    $('#autoOpen').checked = state.autoOpen;
+    $('#autoOpen').onchange = function () { state.autoOpen = this.checked; saveSettings(); };
+    $('#saveAs').checked = state.saveAs;
+    $('#saveAs').onchange = function () { state.saveAs = this.checked; saveSettings(); };
+    $('#openFolderBtn').onclick = function () {
+      if (!lastZipUrl) { toast(t('errNoModel'), 'error'); return; }
+      var w = global.open(lastZipUrl, '_blank');
+      toast(w ? t('openedMsg') + ': ' + lastZipName : t('cannotOpenHint'), w ? 'ok' : 'error');
+    };
 
     $('#docLang').value = state.docLang;
     $('#docLang').onchange = function () { state.docLang = this.value; renderFiles(); saveSettings(); };

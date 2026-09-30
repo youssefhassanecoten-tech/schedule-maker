@@ -156,8 +156,8 @@
           <div class="field">
             <label for="pageSize" id="lblPage">Формат листа monthly</label>
             <select id="pageSize">
-              <option value="A3">A3</option>
               <option value="A4">A4</option>
+              <option value="A3">A3</option>
             </select>
           </div>
           <label class="pill" style="cursor:pointer">
@@ -168,6 +168,23 @@
           <button class="btn btn-primary" id="generateBtn" type="button"></button>
         </div>
         <div id="filesSummary"></div>
+        <div class="card">
+          <div class="card-title" id="savePathTitle">Сохранение</div>
+          <div class="savepath" id="savePathBox">
+            <span class="savepath-label" id="lblSaveTo"></span>
+            <code class="savepath-value" id="savePathValue"></code>
+            <button class="btn btn-sm" id="openFolderBtn" type="button"></button>
+          </div>
+          <div class="hint-sub" id="savePathHint"></div>
+          <label class="pill" style="cursor:pointer">
+            <input type="checkbox" id="saveAs">
+            <span id="lblSaveAs"></span>
+          </label>
+          <label class="pill" style="cursor:pointer">
+            <input type="checkbox" id="autoOpen">
+            <span id="lblOpenAfter"></span>
+          </label>
+        </div>
         <div class="card">
           <div class="card-title" id="treeTitle">Структура папок</div>
           <div class="filetree" id="fileTree"></div>
