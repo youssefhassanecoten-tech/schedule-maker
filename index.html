@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Schedule Maker — Составитель расписания</title>
+<meta name="description" content="Automatic schedule maker and editor for the Department of Russian as a Foreign Language.">
+<link rel="stylesheet" href="assets/styles.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b5bd6'/><text x='16' y='23' font-size='18' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>R</text></svg>">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" id="brandMark">R</div>
+      <div class="brand-text">
+        <div class="brand-title" id="brandTitle">Составитель расписания</div>
+        <div class="brand-sub" id="brandSub">Кафедра русского языка как иностранного</div>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="lang-switch" role="group" aria-label="Language">
+      <button type="button" data-lang="ru" aria-pressed="true">RU</button>
+      <button type="button" data-lang="en" aria-pressed="false">EN</button>
+    </div>
+    <button class="icon-btn" id="themeBtn" type="button" title="Theme" aria-label="Theme">◐</button>
+  </header>
+
+  <main>
+    <!-- upload -->
+    <section id="uploadSection">
+      <div class="dropzone" id="dropzone" tabindex="0" role="button">
+        <div class="dropzone-icon">▤</div>
+        <h2 id="dropTitle">Загрузите файл расписания</h2>
+        <p id="dropHint">Перетащите сюда Raspisanie_versia_N.docx или нажмите для выбора</p>
+        <p class="hint-sub" id="dropSub"></p>
+      </div>
+      <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
+    </section>
+
+    <!-- loaded -->
+    <section id="workSection" hidden>
+      <div class="filebar">
+        <span class="fname" id="fileName">—</span>
+        <span class="fmeta" id="fileMeta"></span>
+        <div class="topbar-spacer"></div>
+        <button class="btn btn-sm" id="reloadBtn" type="button">⟳</button>
+        <button class="btn btn-sm" id="newFileBtn" type="button"></button>
+      </div>
+
+      <div class="stats" id="stats"></div>
+
+      <div class="tabs" role="tablist" id="tabs"></div>
+
+      <!-- CALENDAR -->
+      <section class="panel" id="panel-calendar" role="tabpanel">
+        <div class="toolbar">
+          <div class="field">
+            <label for="weekSel" id="lblWeek">Неделя</label>
+            <select id="weekSel"></select>
+          </div>
+          <div class="field">
+            <label for="monthSel" id="lblMonth">Месяц</label>
+            <select id="monthSel"></select>
+          </div>
+          <div class="grow"></div>
+          <button class="btn btn-sm" id="recalcBtn" type="button"></button>
+          <button class="btn btn-sm" id="unlockBtn" type="button"></button>
+          <button class="btn btn-sm" id="dlWeekBtn" type="button"></button>
+        </div>
+        <div class="note-box" id="liveNote"></div>
+        <div class="grid-wrap"><table class="grid" id="weekGrid"></table></div>
+        <div class="legend">
+          <span><i class="swatch free"></i> <span data-i18n="free"></span></span>
+          <span><i class="swatch locked"></i> <span data-i18n="lockedRoom"></span></span>
+          <span><i class="swatch overflow"></i> <span data-i18n="needsRoom"></span></span>
+          <span>✎ <span data-i18n="hasNote"></span></span>
+        </div>
+      </section>
+
+      <!-- ROOMS -->
+      <section class="panel" id="panel-rooms" role="tabpanel">
+        <div class="toolbar">
+          <div class="field">
+            <label for="roomsWeekSel" id="lblWeek2">Неделя</label>
+            <select id="roomsWeekSel"></select>
+          </div>
+          <div class="grow"></div>
+          <span class="pill" id="roomsSummary"></span>
+        </div>
+        <div id="roomsList"></div>
+      </section>
+
+      <!-- COUNTERS -->
+      <section class="panel" id="panel-counters" role="tabpanel">
+        <div class="toolbar">
+          <div class="field grow" style="max-width:280px">
+            <label for="groupFilter" id="lblGroupFilter">Поиск группы</label>
+            <input type="text" id="groupFilter" placeholder="269, 128А …">
+          </div>
+          <div class="field">
+            <label for="sortGroups" id="lblSort">Сортировка</label>
+            <select id="sortGroups">
+              <option value="name" data-i18n="sortByName"></option>
+              <option value="lessons" data-i18n="sortByLessons"></option>
+              <option value="last" data-i18n="sortByLastTopic"></option>
+            </select>
+          </div>
+        </div>
+        <div class="card" style="padding:0;overflow:hidden">
+          <div style="max-height:66vh;overflow:auto">
+            <table class="data" id="countersTable"></table>
+          </div>
+        </div>
+      </section>
+
+      <!-- REQUESTS -->
+      <section class="panel" id="panel-requests" role="tabpanel">
+        <div id="requestsList"></div>
+      </section>
+
+      <!-- WARNINGS -->
+      <section class="panel" id="panel-warnings" role="tabpanel">
+        <div class="toolbar">
+          <div class="grow"></div>
+          <div class="lang-switch" role="group">
+            <button type="button" data-wfilter="all" aria-pressed="true" id="wAll"></button>
+            <button type="button" data-wfilter="conflict" aria-pressed="false" id="wConflict"></button>
+            <button type="button" data-wfilter="rooms" aria-pressed="false" id="wRooms"></button>
+            <button type="button" data-wfilter="parse" aria-pressed="false" id="wParse"></button>
+          </div>
+        </div>
+        <div class="card"><ul class="plain warn-list" id="warnList"></ul></div>
+      </section>
+
+      <!-- FILES -->
+      <section class="panel" id="panel-files" role="tabpanel">
+        <div class="toolbar">
+          <div class="field">
+            <label for="docLang" id="lblDocLang">Язык документов</label>
+            <select id="docLang">
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="pageSize" id="lblPage">Формат листа monthly</label>
+            <select id="pageSize">
+              <option value="A3">A3</option>
+              <option value="A4">A4</option>
+            </select>
+          </div>
+          <label class="pill" style="cursor:pointer">
+            <input type="checkbox" id="hlOverflow" checked>
+            <span id="lblHl">Подсвечивать</span>
+          </label>
+          <div class="grow"></div>
+          <button class="btn btn-primary" id="generateBtn" type="button"></button>
+        </div>
+        <div id="filesSummary"></div>
+        <div class="card">
+          <div class="card-title" id="treeTitle">Структура папок</div>
+          <div class="filetree" id="fileTree"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS -->
+      <section class="panel" id="panel-settings" role="tabpanel">
+        <div class="card">
+          <div class="card-title" id="tSem">Семестр</div>
+          <div class="settings-grid">
+            <div class="field">
+              <label for="semStart" id="lblSemStart"></label>
+              <input type="date" id="semStart">
+            </div>
+            <div class="field">
+              <label for="semWeeks" id="lblSemWeeks"></label>
+              <input type="number" id="semWeeks" min="1" max="40">
+            </div>
+            <div class="field">
+              <label for="roomsList" id="lblRooms"></label>
+              <input type="text" id="roomsList">
+              <span class="hint" id="roomsHint"></span>
+            </div>
+            <div class="field">
+              <label for="rootFolder" id="lblRoot"></label>
+              <input type="text" id="rootFolder">
+            </div>
+          </div>
+          <div class="toolbar" style="margin:14px 0 0">
+            <button class="btn btn-primary btn-sm" id="applySem" type="button"></button>
+            <button class="btn btn-sm" id="resetSem" type="button"></button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="tFiles">Шаблоны имён файлов</div>
+          <div class="settings-grid">
+            <div class="field">
+              <label for="patWeekly" id="lblPatWeekly"></label>
+              <input type="text" id="patWeekly">
+            </div>
+            <div class="field">
+              <label for="patMonthly" id="lblPatMonthly"></label>
+              <input type="text" id="patMonthly">
+            </div>
+            <div class="field">
+              <label for="patZayavka" id="lblPatZayavka"></label>
+              <input type="text" id="patZayavka">
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="tFixed">Закреплённые аудитории</div>
+          <div class="settings-grid" id="fixedRooms"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="tPref">Предпочтительная аудитория</div>
+          <div class="settings-grid" id="prefRooms"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" id="tAbout">О программе</div>
+          <dl class="kv-list" id="aboutList"></dl>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer" id="footer"></footer>
+</div>
+
+<div class="toast-host" id="toastHost"></div>
+
+<script src="vendor/jszip.min.js"></script>
+<script src="src/config.js"></script>
+<script src="src/util.js"></script>
+<script src="src/i18n.js"></script>
+<script src="src/spec.js"></script>
+<script src="src/cellparse.js"></script>
+<script src="src/docx-read.js"></script>
+<script src="src/resolve.js"></script>
+<script src="src/counters.js"></script>
+<script src="src/rooms.js"></script>
+<script src="src/docx-write.js"></script>
+<script src="src/templates/weekly.js"></script>
+<script src="src/templates/monthly.js"></script>
+<script src="src/templates/zayavka.js"></script>
+<script src="src/model.js"></script>
+<script src="src/package.js"></script>
+<script src="src/ui.js"></script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+node_modules/
+out-test*.docx
+out-test.zip
+browser-out.zip
+screenshot-*.png
+shots/
+samples/
+*.log
+.DS_Store
+Thumbs.db

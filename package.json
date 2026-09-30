@@ -1,0 +1,24 @@
+{
+  "name": "schedule-maker",
+  "version": "1.0.0",
+  "description": "Automatic schedule maker and editor for the Department of Russian as a Foreign Language. Reads Raspisanie_versia_N.docx and produces the weekly schedule, the monthly schedule and the auditorium request. Pure static web app, no build step.",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "test": "npm run validate && npm run verify && npm run compare",
+    "validate": "node tools/validate.js",
+    "verify": "node tools/verify-docx.js",
+    "compare": "node tools/compare-cells.js",
+    "compare-week": "node tools/compare-week.js",
+    "browser": "node tools/browser-test.js"
+  },
+  "keywords": ["schedule", "docx", "timetable", "wordprocessingml"],
+  "license": "MIT",
+  "dependencies": {
+    "@xmldom/xmldom": "^0.8.10",
+    "jszip": "^3.10.1"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}
