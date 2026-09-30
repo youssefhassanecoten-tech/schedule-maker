@@ -113,7 +113,11 @@
       weeks: 'Недель',
       dlWeek: 'Скачать неделю',
       lesson: 'занятие',
-      generatedTree: 'Структура папок'
+      generatedTree: 'Структура папок',
+      install: 'Установить',
+      installed: 'Установлено',
+      installHint: 'Приложение работает офлайн и открывается отдельным окном.',
+      offlineReady: 'Готово к работе офлайн'
     },
     en: {
       appTitle: 'Schedule Maker',
@@ -224,7 +228,11 @@
       weeks: 'Weeks',
       dlWeek: 'Download week',
       lesson: 'lesson',
-      generatedTree: 'Folder structure'
+      generatedTree: 'Folder structure',
+      install: 'Install',
+      installed: 'Installed',
+      installHint: 'The app works offline and opens in its own window.',
+      offlineReady: 'Ready to work offline'
     }
   };
 

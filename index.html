@@ -5,6 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Schedule Maker — Составитель расписания</title>
 <meta name="description" content="Automatic schedule maker and editor for the Department of Russian as a Foreign Language.">
+<meta name="theme-color" content="#5b5bd6">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Schedule Maker">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="stylesheet" href="assets/styles.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='8' fill='%235b5bd6'/><text x='16' y='23' font-size='18' font-family='sans-serif' font-weight='bold' fill='white' text-anchor='middle'>R</text></svg>">
 </head>
@@ -20,6 +28,7 @@
       </div>
     </div>
     <div class="topbar-spacer"></div>
+    <button class="btn btn-sm" id="installBtn" type="button" hidden data-i18n="install"></button>
     <div class="lang-switch" role="group" aria-label="Language">
       <button type="button" data-lang="ru" aria-pressed="true">RU</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>

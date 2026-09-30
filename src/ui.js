@@ -778,6 +778,8 @@
     $('#dlWeekBtn').textContent = t('dlWeek');
     $('#footer').textContent = t('footer');
     $$('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
+    var ib = $('#installBtn');
+    if (ib) ib.textContent = t('install');
     $('#wAll').textContent = t('wAll');
     $('#wConflict').textContent = t('wConflict');
     $('#wRooms').textContent = t('wRooms');
@@ -821,6 +823,43 @@
     else if (state.tab === 'files') renderFiles();
     else if (state.tab === 'settings') renderSettings();
     saveSettings();
+  }
+
+  /* ------------------------------------------------------------ install (PWA) */
+
+  function initInstall() {
+    var btn = $('#installBtn');
+    if (!btn) return;
+    var deferred = null;
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferred = e;
+      btn.hidden = false;
+    });
+
+    btn.addEventListener('click', function () {
+      if (!deferred) return;
+      deferred.prompt();
+      deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
+    });
+
+    window.addEventListener('appinstalled', function () {
+      btn.hidden = true;
+      toast(t('installed') + ' ✓', 'ok');
+    });
+
+    // already installed as a standalone app
+    try {
+      if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone) {
+        btn.hidden = true;
+      }
+    } catch (e) { /* older browsers */ }
+
+    // service worker, only meaningful over http(s)
+    if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* file:// or offline */ });
+    }
   }
 
   /* ------------------------------------------------------------ wiring */
@@ -934,6 +973,8 @@
         if (w <= state.semester.weeks) { state.week = w; state.tab = 'calendar'; renderAll(); }
       }
     });
+
+    initInstall();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

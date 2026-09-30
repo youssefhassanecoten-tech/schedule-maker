@@ -10,7 +10,10 @@
     "verify": "node tools/verify-docx.js",
     "compare": "node tools/compare-cells.js",
     "compare-week": "node tools/compare-week.js",
-    "browser": "node tools/browser-test.js"
+    "browser": "node tools/browser-test.js",
+    "serve:test": "node tools/serve-test.js",
+    "icons": "node tools/make-icons.js",
+    "shots": "node tools/shots.js"
   },
   "keywords": ["schedule", "docx", "timetable", "wordprocessingml"],
   "license": "MIT",
