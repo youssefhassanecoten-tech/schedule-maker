@@ -36,6 +36,11 @@
   var DAYS = 6;
   var SUB = 4;
 
+  /* Half-point font size. The reference sets every run in the table to w:sz=10,
+   * i.e. 5pt, with no bold anywhere and centre alignment throughout. Matching
+   * that literally makes the output look like the department's file. */
+  var SZ = SM.config.MONTHLY_FONT_SZ;
+
   function title(year, month, lang) {
     if (lang === 'en') {
       return 'Class schedule of the Department of Russian as a Foreign Language, ' +
@@ -53,11 +58,25 @@
                .replace('{year}', year);
   }
 
+  /* Weeks that touch the given calendar month.
+   *
+   * The department files a week under the month it *overlaps*, not the month its
+   * Monday falls in. 2_Oktyabr_2026_G__1.doc opens with week 5, whose Monday is
+   * 28.09 - a September date - yet the week runs to 03.10 and is filed with
+   * October. Selecting on Monday alone drops that week from the October document
+   * and leaves it in September, which is not what the department does.
+   *
+   * So: any week with at least one lesson day inside the month counts. */
   function weeksOfMonth(model, year, month) {
     var out = [];
     for (var w = 1; w <= model.semester.weeks; w++) {
       var mon = U.mondayOfWeek(w, model.semester.firstMonday);
-      if (+mon.slice(5, 7) - 1 === month && +mon.slice(0, 4) === year) out.push(w);
+      var touches = false;
+      for (var d = 0; d < DAYS; d++) {
+        var iso = U.addDays(mon, d);
+        if (+iso.slice(0, 4) === year && +iso.slice(5, 7) - 1 === month) { touches = true; break; }
+      }
+      if (touches) out.push(w);
     }
     return out;
   }
@@ -122,16 +141,18 @@
     var ra = table.row();
     ra.cell({
       text: lang === 'en' ? 'Week' : 'Номер недели',
-      width: weekW, align: 'center', bold: true, size: 13, vMerge: 'restart'
+      width: weekW, align: 'center', size: SZ, vMerge: 'restart'
     });
     ra.cell({
       text: lang === 'en' ? 'Time' : 'Время',
-      width: timeW, align: 'center', bold: true, size: 13, vMerge: 'restart'
+      width: timeW, align: 'center', size: SZ, vMerge: 'restart'
     });
     for (var d1 = 0; d1 < DAYS; d1++) {
+      // Reference spells the weekdays lower-case: "понедельник", not
+      // "Понедельник".
       ra.cell({
-        text: lang === 'en' ? SM.config.DAYS_EN[d1] : SM.config.DAYS_RU[d1],
-        gridSpan: SUB, align: 'center', bold: true, size: 14
+        text: (lang === 'en' ? SM.config.DAYS_EN[d1] : SM.config.DAYS_RU[d1]).toLowerCase(),
+        gridSpan: SUB, align: 'center', size: SZ
       });
     }
 
@@ -140,7 +161,7 @@
     rb.cell({ text: '', width: weekW, vMerge: 'continue' });
     rb.cell({ text: '', width: timeW, vMerge: 'continue' });
     for (var d2 = 0; d2 < DAYS; d2++) {
-      for (var k = 0; k < SUB; k++) rb.cell({ text: sub[k], align: 'center', bold: true, size: 12 });
+      for (var k = 0; k < SUB; k++) rb.cell({ text: sub[k], align: 'center', size: SZ });
     }
 
     weeks.forEach(function (week) {
@@ -153,13 +174,21 @@
       for (var d3 = 0; d3 < DAYS; d3++) {
         rc.cell({
           text: U.fmtRu(U.addDays(mon, d3), true),
-          gridSpan: SUB, align: 'center', bold: true, size: 13
+          gridSpan: SUB, align: 'center', size: SZ
         });
       }
 
-      var weekLabel = (lang === 'en' ? 'week ' : '') + week +
-                      (lang === 'en' ? ' (' : ' неделя (с ') +
-                      U.fmtRu(mon, true) + ' по ' + U.fmtRu(sat, true) + ')';
+      /* Reference wording, verbatim:
+       *   "5 неделя" / "(с 28.09. по 03.10.)"   - two paragraphs, no space
+       *   before the bracket. The old build emitted it as a single line
+       *   "5 неделя (с ...)". */
+      var weekLabel = lang === 'en'
+        ? ('week ' + week + '\n(from ' + U.fmtRu(mon, true) + ' to ' + U.fmtRu(sat, true) + ')')
+        : (week + ' неделя\n(с ' + U.fmtRu(mon, true) + ' по ' + U.fmtRu(sat, true) + ')');
+
+      /* True only for the first row ever emitted for this week, which is what
+       * starts the week-label merge. */
+      var firstBlock = true;
 
       SM.config.MONTHLY_PROFILE.blocks.forEach(function (bkey) {
         var days = blockMatrix(model, week, bkey);
@@ -172,12 +201,15 @@
           var ss = subslots[s];
           for (var r = 0; r < maxRows; r++) {
             var row = table.row();
+            var startsWeek = (s === 0 && r === 0 && firstBlock);
             row.cell({
-              text: (s === 0 && r === 0) ? weekLabel : '',
-              width: weekW, align: 'left', size: 11,
-              // The week label spans the whole week: the first time group starts
-              // it, every following group continues it.
-              vMerge: (s === 0 && r === 0) ? 'restart' : 'continue'
+              text: startsWeek ? weekLabel : '',
+              width: weekW, align: 'center', size: SZ,
+              /* The week label spans the whole week, not one time group: only
+               * the very first row of the week restarts the merge, every
+               * remaining row continues it. Restarting it per time block
+               * duplicated the label three times over. */
+              vMerge: startsWeek ? 'restart' : 'continue'
             });
             var tlabel = (s === 0 && r === 0)
               ? (ss.from + (ss.to ? ' – ' + ss.to : ''))
@@ -185,7 +217,7 @@
             // The time label is merged down its whole group, matching the
             // reference: first row restarts the merge, the rest continue it.
             row.cell({
-              text: tlabel, width: timeW, align: 'left', size: 11,
+              text: tlabel, width: timeW, align: 'center', size: SZ,
               vMerge: (s === 0 && r === 0) ? 'restart' : 'continue'
             });
             for (var d4 = 0; d4 < DAYS; d4++) {
@@ -195,11 +227,12 @@
                 for (var e = 0; e < SUB; e++) row.cell({ text: '' });
                 continue;
               }
-              row.cell({ text: o.group, align: 'center', size: 12, fill: hl });
-              row.cell({ text: o.teacher, align: 'left', size: 12, fill: hl });
-              row.cell({ text: o.room || '', align: 'center', size: 12, fill: hl });
-              row.cell({ text: String(o.topic || ''), align: 'center', size: 12, fill: hl });
+              row.cell({ text: o.group, align: 'center', size: SZ, fill: hl });
+              row.cell({ text: o.teacher, align: 'center', size: SZ, fill: hl });
+              row.cell({ text: o.room || '', align: 'center', size: SZ, fill: hl });
+              row.cell({ text: String(o.topic || ''), align: 'center', size: SZ, fill: hl });
             }
+            if (s === 0 && r === 0) firstBlock = false;
           }
         }
       });

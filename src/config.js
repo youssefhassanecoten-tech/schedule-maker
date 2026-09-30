@@ -117,6 +117,10 @@
     blocks: ['M', 'A', 'E']
   };
 
+  /* Half-point font size for every run in the monthly table. The department's
+   * 2_Oktyabr_2026_G__1.doc sets all of them to w:sz=10 (5pt), unbolded. */
+  var MONTHLY_FONT_SZ = 10;
+
   SM.config = {
     DAYS_RU: DAYS_RU,
     DAYS_EN: DAYS_EN,
@@ -136,6 +140,7 @@
     PAGE_SIZES: PAGE_SIZES,
     DEFAULT_PAGE_SIZE: DEFAULT_PAGE_SIZE,
     MONTHLY_PROFILE: MONTHLY_PROFILE,
+    MONTHLY_FONT_SZ: MONTHLY_FONT_SZ,
 
     /* Semester calendar. Week 1 Monday = 2026-08-31.
      * NOTE: the source schedule references 10.02.2027 (week 24 Wednesday) in ranges
