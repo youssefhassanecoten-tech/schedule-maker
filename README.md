@@ -1,8 +1,12 @@
+<<<<<<< HEAD
 # Schedule Maker · Составитель расписания
 
-Automatic schedule maker and editor for the **Department of Russian as a Foreign
-Language**. Feed it the department's grid (`Raspisanie_versia_N.docx`) and it
-produces every downstream document the department has to file.
+An automatic schedule maker for organisations and institutions, specially those
+involved in educational programs like universities and academies.
+
+Concretely: a schedule maker and editor for the **Department of Russian as a
+Foreign Language**. Feed it the department's grid (`Raspisanie_versia_N.docx`)
+and it produces every downstream document the department has to file.
 
 Runs entirely in the browser — the file is never uploaded anywhere.
 
@@ -223,3 +227,7 @@ and **18/18 lesson-number assertions correct** against the department's files.
 2. Open **Settings** and set the first Monday and the number of weeks.
 3. Review **Lesson counters** to confirm which groups inherit a number.
 4. Review **Warnings**, fix duplicates, generate.
+=======
+# schedule-maker
+An automatic schedule maker for organistion or instituitions specially those involved in educational programs like universities and academies.
+>>>>>>> origin/main
