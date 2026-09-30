@@ -31,6 +31,22 @@
       "purpose": "maskable"
     }
   ],
+  "shortcuts": [
+    {
+      "name": "Open a schedule file",
+      "short_name": "Open file",
+      "description": "Load Raspisanie_versia_N.docx and generate the department documents",
+      "url": "./?action=open",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Saved runs",
+      "short_name": "Memory",
+      "description": "Reopen one of the last 10 saved runs",
+      "url": "./?tab=memory",
+      "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
   "file_handlers": [
     {
       "action": "./",
@@ -38,5 +54,6 @@
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [".docx"]
       }
     }
-  ]
+  ],
+  "prefer_related_applications": false
 }
