@@ -73,9 +73,22 @@
     return root.children[name];
   }
 
-  /* f.doc() may return a Doc synchronously or a promise for one. */
-  function toBlob(f, JSZipCtor) {
-    return Promise.resolve(f.doc()).then(function (d) { return d.toBlob(JSZipCtor); });
+  /* f.doc() may return a Doc synchronously or a promise for one.
+   *
+   * Output format note: everything here writes WordprocessingML (.docx) blobs.
+   * The department's originals are binary Word 97 (.doc), which cannot be
+   * produced in a browser and is deliberately not attempted - see
+   * AGENTS.md. The seam for that is `opts.converter`: pass
+   * { docxToDoc: async (blob, name) => blob } to swap in an external
+   * converter (for example a local Word COM round-trip) without changing any
+   * template. Left undefined, output stays .docx. */
+  function toBlob(f, JSZipCtor, converter) {
+    return Promise.resolve(f.doc())
+      .then(function (d) { return d.toBlob(JSZipCtor); })
+      .then(function (blob) {
+        if (!converter || !converter.docxToDoc) return blob;
+        return Promise.resolve(converter.docxToDoc(blob, f.name));
+      });
   }
   /* Async: materialise every document and return a JSZip ready for download. */
   function buildZip(model, opts) {
@@ -85,20 +98,21 @@
     var mf = manifest(model, opts);
     var zip = new JSZipCtor();
     var root = zip.folder(mf.root.path);
+    var conv = opts.converter;
     var jobs = [];
 
     Object.keys(mf.root.children).forEach(function (monthName) {
       var mNode = mf.root.children[monthName];
       var mFolder = root.folder(monthName);
       mNode.files.forEach(function (f) {
-        jobs.push(toBlob(f, JSZipCtor).then(function (blob) {
+        jobs.push(toBlob(f, JSZipCtor, conv).then(function (blob) {
           mFolder.file(f.name, blob);
         }));
       });
       Object.keys(mNode.children).forEach(function (weekName) {
         var wFolder = mFolder.folder(weekName);
         mNode.children[weekName].files.forEach(function (f) {
-          jobs.push(toBlob(f, JSZipCtor).then(function (blob) {
+          jobs.push(toBlob(f, JSZipCtor, conv).then(function (blob) {
             wFolder.file(f.name, blob);
           }));
         });

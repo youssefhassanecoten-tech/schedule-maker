@@ -42,21 +42,41 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   const tabs = await page.$$eval('#tabs .tab', els => els.map(e => e.textContent.trim()));
   console.log('tabs:', tabs.join(' | '));
 
-  for (const id of ['calendar', 'rooms', 'counters', 'requests', 'warnings', 'files', 'settings']) {
-    await page.click(`#tabs .tab:nth-child(${tabs.findIndex(t => {
-      const map = { calendar: 'Календарь', rooms: 'Аудитории', counters: 'Счётчик', requests: 'Переполнение', warnings: 'Предупр', files: 'Предпросмотр', settings: 'Настройки' };
-      return t.includes(map[id]);
-    }) + 1})`).catch(() => {});
-    await page.waitForTimeout(220);
+// Resolve tabs by their visible label so the test does not break when a tab is
+  // added, removed or reordered.
+  const LABELS = {
+    calendar: ['Календарь', 'Calendar'],
+    rooms: ['Аудитории', 'Rooms'],
+    counters: ['Счётчик занятий', 'Lesson counters'],
+    requests: ['Переполнение', 'Overflow'],
+    warnings: ['Предупреждения', 'Warnings'],
+    files: ['Файлы', 'Files'],
+    memory: ['Память', 'Memory'],
+    settings: ['Настройки', 'Settings']
+  };
+  async function clickTab(id) {
+    const want = LABELS[id];
+    const idx = await page.$$eval('#tabs .tab', (els, want) =>
+      els.findIndex(e => want.some(w => e.textContent.includes(w))), want);
+    if (idx < 0) throw new Error('tab not found: ' + id);
+    await page.click(`#tabs .tab:nth-child(${idx + 1})`);
+    await page.waitForTimeout(280);
+    return idx + 1;
+  }
+
+  for (const id of ['calendar', 'rooms', 'counters', 'requests', 'warnings', 'files', 'memory', 'settings']) {
+    if (!(await page.$('#tabs .tab'))) break;
+    let ok = true;
+    try { await clickTab(id); } catch (e) { ok = false; console.log('  (no ' + id + ' tab)'); }
+    if (!ok) continue;
     const active = await page.$eval('.panel.is-active', e => e.id).catch(() => '(none)');
     const chars = (await page.textContent('#panel-' + id).catch(() => '') || '').replace(/\s+/g, ' ').trim();
-    console.log(`  tab ${id.padEnd(9)} active=${active.padEnd(16)} content=${chars.length} chars  ::  ${chars.slice(0, 110)}`);
+    console.log(`  tab ${id.padEnd(9)} active=${active.padEnd(16)} content=${chars.length} chars  ::  ${chars.slice(0, 100)}`);
   }
 
   // ---- live edit: pin a room and confirm it survives ----
   console.log('\n=== LIVE EDIT TEST ===');
-  await page.click('#tabs .tab:nth-child(1)');
-  await page.waitForTimeout(250);
+  await clickTab('calendar');
   const before = await page.$$eval('.room-edit', els => els.map(e => e.value));
   const occupied = await page.$$eval('.cellbox', els => els.length);
   console.log('cells with lessons:', occupied, ' room selects:', before.length);
@@ -77,8 +97,7 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
 
   // ---- counters table ----
   console.log('\n=== COUNTERS ===');
-  await page.click('#tabs .tab:nth-child(3)');
-  await page.waitForTimeout(250);
+  await clickTab('counters');
   const counters = await page.$$eval('#countersTable tbody tr', rows =>
     rows.slice(0, 6).map(r => Array.from(r.children).map(c => c.textContent.trim()).join(' | ')));
   counters.forEach(c => console.log('  ' + c));
@@ -86,8 +105,7 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
 
   // ---- rooms tab: block summary ----
   console.log('\n=== ROOMS TAB ===');
-  await page.click('#tabs .tab:nth-child(2)');
-  await page.waitForTimeout(300);
+  await clickTab('rooms');
   console.log('  summary:', await page.textContent('#roomsSummary'));
   const blocks = await page.$$eval('.blockrow', els => els.slice(0, 4).map(e =>
     e.textContent.replace(/\s+/g, ' ').trim().slice(0, 130)));
@@ -95,8 +113,7 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
 
   // ---- settings round trip ----
   console.log('\n=== SETTINGS ===');
-  await page.click('#tabs .tab:nth-child(7)');
-  await page.waitForTimeout(250);
+  await clickTab('settings');
   await page.fill('#semWeeks', '20');
   await page.click('#applySem');
   await page.waitForTimeout(700);
@@ -108,9 +125,8 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
 
   // ---- generate the ZIP ----
   console.log('\n=== GENERATE ===');
-  await page.click('#tabs .tab:nth-child(6)');
-  await page.waitForTimeout(250);
-  console.log('  tree head:', (await page.textContent('#fileTree')).split('\n').slice(0, 6).join(' / '));
+  await clickTab('files');
+  console.log('  tree head:', (await page.textContent('#fileTree')).split('\n').slice(0, 4).join(' / '));
   const dl = page.waitForEvent('download', { timeout: 120000 });
   await page.click('#generateBtn');
   const download = await dl;
@@ -125,8 +141,7 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   console.log('  brand:', await page.textContent('#brandTitle'));
   const tabsEn = await page.$$eval('#tabs .tab', els => els.map(e => e.textContent.trim()));
   console.log('  tabs:', tabsEn.join(' | '));
-  await page.click('#tabs .tab:nth-child(1)');
-  await page.waitForTimeout(300);
+  await clickTab('calendar');
   const headers = await page.$$eval('#weekGrid thead th', e => e.map(x => x.textContent.trim()).slice(0, 6));
   console.log('  week grid headers:', headers.join(' | '));
   await page.screenshot({ path: path.join(ROOT, 'screenshot-en.png'), fullPage: false });

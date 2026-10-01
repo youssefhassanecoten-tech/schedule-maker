@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Schedule Maker · Составитель расписания
 
 An automatic schedule maker for organisations and institutions, specially those
@@ -271,7 +270,3 @@ and **18/18 lesson-number assertions correct** against the department's files.
 2. Open **Settings** and set the first Monday and the number of weeks.
 3. Review **Lesson counters** to confirm which groups inherit a number.
 4. Review **Warnings**, fix duplicates, generate.
-=======
-# schedule-maker
-An automatic schedule maker for organistion or instituitions specially those involved in educational programs like universities and academies.
->>>>>>> origin/main

@@ -30,6 +30,7 @@
     </div>
     <div class="topbar-spacer"></div>
     <button class="btn btn-sm" id="installBtn" type="button" hidden data-i18n="install"></button>
+    <div class="card install-help" id="installHelp" hidden></div>
     <div class="lang-switch" role="group" aria-label="Language">
       <button type="button" data-lang="ru" aria-pressed="true">RU</button>
       <button type="button" data-lang="en" aria-pressed="false">EN</button>
@@ -62,6 +63,21 @@
       <div class="stats" id="stats"></div>
 
       <div class="tabs" role="tablist" id="tabs"></div>
+
+      <!-- MEMORY -->
+      <section class="panel" id="panel-memory" role="tabpanel">
+        <div class="toolbar">
+          <button class="btn btn-sm" id="saveRunBtn" type="button"></button>
+          <button class="btn btn-sm" id="restoreRunBtn" type="button"></button>
+          <div class="grow"></div>
+          <button class="btn btn-sm btn-ghost" id="clearRunsBtn" type="button"></button>
+        </div>
+        <div class="hint-sub" id="memoryHint"></div>
+        <div class="card">
+          <div class="card-title" id="runsTitle"></div>
+          <ul class="plain run-list" id="runList"></ul>
+        </div>
+      </section>
 
       <!-- CALENDAR -->
       <section class="panel" id="panel-calendar" role="tabpanel">
@@ -157,8 +173,8 @@
           <div class="field">
             <label for="pageSize" id="lblPage">Формат листа monthly</label>
             <select id="pageSize">
-              <option value="A3">A3</option>
               <option value="A4">A4</option>
+              <option value="A3">A3</option>
             </select>
           </div>
           <label class="pill" style="cursor:pointer">
@@ -169,6 +185,23 @@
           <button class="btn btn-primary" id="generateBtn" type="button"></button>
         </div>
         <div id="filesSummary"></div>
+        <div class="card">
+          <div class="card-title" id="savePathTitle">Сохранение</div>
+          <div class="savepath" id="savePathBox">
+            <span class="savepath-label" id="lblSaveTo"></span>
+            <code class="savepath-value" id="savePathValue"></code>
+            <button class="btn btn-sm" id="openFolderBtn" type="button"></button>
+          </div>
+          <div class="hint-sub" id="savePathHint"></div>
+          <label class="pill" style="cursor:pointer">
+            <input type="checkbox" id="saveAs">
+            <span id="lblSaveAs"></span>
+          </label>
+          <label class="pill" style="cursor:pointer">
+            <input type="checkbox" id="autoOpen">
+            <span id="lblOpenAfter"></span>
+          </label>
+        </div>
         <div class="card">
           <div class="card-title" id="treeTitle">Структура папок</div>
           <div class="filetree" id="fileTree"></div>
@@ -260,6 +293,7 @@
 <script src="src/templates/monthly.js"></script>
 <script src="src/templates/zayavka.js"></script>
 <script src="src/model.js"></script>
+<script src="src/memory.js"></script>
 <script src="src/package.js"></script>
 <script src="src/ui.js"></script>
 </body>

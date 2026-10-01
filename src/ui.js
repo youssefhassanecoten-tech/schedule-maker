@@ -15,7 +15,7 @@
     tab: 'calendar',
     week: 1,
     docLang: 'ru',
-    pageSize: 'A3',
+    pageSize: C.DEFAULT_PAGE_SIZE,
     highlight: true,
     warnFilter: 'all',
     groupFilter: '',
@@ -25,8 +25,42 @@
     files: { weekly: C.files.weekly, monthly: 'Raspisanie_M_{month}_{year}.docx', zayavka: C.files.zayavka },
     rootFolder: C.output.rootFolder,
     weekFolderPrefix: C.output.weekFolderPrefix,
+    autoOpen: false,
+    saveAs: false,
     generated: null
   };
+
+  /* ------------------------------------------------------------- save path
+   *
+   * A browser cannot tell a page where it downloads files, and it refuses to
+   * open a local folder at all. So the destination is described, not resolved:
+   * we name the folder the ZIP will land in and keep a handle on the last blob
+   * we produced, which is what "open file" re-opens. Anything more precise
+   * would need the File System Access API, which is Chromium-only and cannot be
+   * relied on when index.html runs from file://.
+   */
+
+  var lastZipUrl = null, lastZipName = null, lastSavedPath = null;
+
+  function zipFileName() { return state.rootFolder + '.zip'; }
+
+  /* Best available description of where downloads go. */
+  function savePathLabel() {
+    return lastSavedPath || t('saveZipHint');
+  }
+
+  function renderSavePath() {
+    var box = $('#savePathBox');
+    if (!box) return;
+    $('#lblSaveTo').textContent = t('saveTo');
+    $('#savePathValue').textContent = zipFileName();
+    $('#savePathValue').title = zipFileName();
+    $('#savePathHint').textContent = savePathLabel();
+    var b = $('#openFolderBtn');
+    b.textContent = t('openFile');
+    // Only meaningful once something has actually been generated.
+    b.disabled = !lastZipUrl;
+  }
 
   var $ = function (sel, root) { return (root || document).querySelector(sel); };
   var $$ = function (sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); };
@@ -64,7 +98,7 @@
         lang: state.lang, theme: state.theme, semester: state.semester,
         rooms: state.rooms, files: state.files, rootFolder: state.rootFolder,
         weekFolderPrefix: state.weekFolderPrefix, docLang: state.docLang,
-        pageSize: state.pageSize, highlight: state.highlight,
+        pageSize: state.pageSize, highlight: state.highlight, autoOpen: state.autoOpen, saveAs: state.saveAs,
         fixed: C.FIXED_ROOMS, pref: C.TEACHER_ROOM_PREF
       }));
     } catch (e) { /* private mode - ignore */ }
@@ -73,7 +107,7 @@
     try {
       var s = JSON.parse(localStorage.getItem(LS_KEY) || 'null');
       if (!s) return;
-      ['lang', 'theme', 'docLang', 'pageSize', 'highlight', 'rootFolder', 'weekFolderPrefix'].forEach(function (k) {
+      ['lang', 'theme', 'docLang', 'pageSize', 'highlight', 'rootFolder', 'weekFolderPrefix', 'autoOpen', 'saveAs'].forEach(function (k) {
         if (s[k] !== undefined && s[k] !== null) state[k] = s[k];
       });
       if (s.semester) state.semester = s.semester;
@@ -98,14 +132,20 @@
     var reader = new FileReader();
     reader.onerror = function () { toast(t('errBadFile'), 'error'); renderUpload(); };
     reader.onload = function () {
+      // Keep the raw bytes: the memory store needs the original .docx to be
+      // able to reopen this run without asking the user to upload again.
+      var bytes = new Uint8Array(reader.result);
       SM.docxRead.readDocx(reader.result)
         .then(function (grid) {
           state.grid = grid;
+          state.fileName = file.name;
+          state.fileBytes = bytes;
           rebuildModel();
           state.week = pickStartWeek();
           $('#uploadSection').hidden = true;
           $('#workSection').hidden = false;
           renderAll();
+          autosaveRun(file.name);
           toast(t('saved') + ': ' + file.name, 'ok');
         })
         .catch(function (err) {
@@ -140,6 +180,175 @@
     renderAll();
   }
 
+  /* ------------------------------------------------------------ memory
+   *
+   * A "run" is one uploaded grid plus the view state around it. Runs live in
+   * IndexedDB (src/memory.js) because the source .docx is far too large for
+   * localStorage. Uploading a file autosaves, so a refresh or a crash comes
+   * back to the same grid instead of the empty drop zone.
+   */
+
+  function snapshot(name) {
+    return {
+      fileName: name || state.fileName || 'schedule.docx',
+      bytes: state.fileBytes || null,
+      week: state.week,
+      tab: state.tab,
+      semester: JSON.parse(JSON.stringify(state.semester)),
+      rooms: state.rooms.slice(),
+      files: Object.assign({}, state.files),
+      rootFolder: state.rootFolder,
+      pageSize: state.pageSize,
+      highlight: state.highlight,
+      docLang: state.docLang,
+      teachers: state.model ? state.model.teachers.length : 0,
+      lessons: state.model ? (state.model.occurrences || []).length : 0
+    };
+  }
+
+  /* Called after every successful upload, and after edits that change the
+   * schedule itself, so the stored run is never stale. */
+  function autosaveRun(name) {
+    if (!state.fileBytes) return;
+    var run = snapshot(name);
+    // Reuse the id of the run we are already on, otherwise every autosave
+    // would create a new history entry and flood the 10-run limit.
+    if (state.runId) run.id = state.runId;
+    run.savedAt = Date.now();
+    SM.memory.save(run)
+      .then(function (id) {
+        state.runId = id;
+        if (state.tab === 'memory') renderMemory();
+      })
+      .catch(function (err) {
+        console.warn('memory save failed', err);
+        if (state.tab === 'memory') toast(t('memoryUnavailable'), 'error');
+      });
+  }
+
+  function openRun(run) {
+    if (!run || !run.bytes) { toast(t('errNoFile'), 'error'); return Promise.resolve(null); }
+    // copy() gives a plain ArrayBuffer with its own backing store; passing the
+    // Uint8Array view's buffer directly can hand JSZip a view into a larger
+    // buffer, which makes it read past the end of the file.
+    var buf = run.bytes.buffer.slice(
+      run.bytes.byteOffset, run.bytes.byteOffset + run.bytes.byteLength);
+    return SM.docxRead.readDocx(buf)
+      .then(function (grid) {
+        state.grid = grid;
+        state.fileName = run.fileName;
+        state.fileBytes = run.bytes;
+        state.runId = run.id;
+        if (run.semester) state.semester = Object.assign(state.semester, run.semester);
+        if (Array.isArray(run.rooms) && run.rooms.length) state.rooms = run.rooms;
+        if (run.files) state.files = Object.assign(state.files, run.files);
+        if (run.rootFolder) state.rootFolder = run.rootFolder;
+        if (run.pageSize) state.pageSize = run.pageSize;
+        if (run.docLang) state.docLang = run.docLang;
+        state.highlight = run.highlight !== false;
+        rebuildModel();
+        state.week = run.week || 1;
+        state.tab = run.tab || 'calendar';
+        $('#uploadSection').hidden = true;
+        $('#workSection').hidden = false;
+        renderAll();
+        toast(t('runOpened') + ': ' + run.fileName, 'ok');
+      })
+      .catch(function (err) {
+        console.error(err);
+        toast(t('errBadFile') + ' — ' + err.message, 'error');
+      });
+  }
+
+  function fmtWhen(ts) {
+    var d = new Date(ts);
+    function p(n) { return (n < 10 ? '0' : '') + n; }
+    return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear() +
+           ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+
+  function renderMemory() {
+    var list = $('#runList');
+    if (!list) return;
+    $('#runsTitle').textContent = t('savedRuns');
+    $('#saveRunBtn').textContent = t('saveRun');
+    $('#restoreRunBtn').textContent = t('restoreLast');
+    $('#clearRunsBtn').textContent = t('clearRuns');
+    $('#memoryHint').textContent = t('memoryHint');
+    list.innerHTML = '';
+
+    SM.memory.list().then(function (rows) {
+      list.innerHTML = '';
+      if (!rows.length) {
+        list.appendChild(el('li', { class: 'hint-sub', text: t('noRuns') }));
+        return;
+      }
+      rows.forEach(function (run, i) {
+        var isCurrent = run.id === state.runId;
+        var name = el('span', {
+          class: 'run-name' + (isCurrent ? ' is-current' : ''),
+          text: run.fileName,
+          title: run.fileName
+        });
+        var meta = el('span', {
+          class: 'run-meta',
+          text: fmtWhen(run.savedAt) + ' · ' +
+                t('lessonsCount') + ': ' + (run.lessons || 0)
+        });
+
+        var rename = el('button', {
+          class: 'icon-btn', type: 'button', title: t('renameRun'),
+          'aria-label': t('renameRun'), text: '✎',
+          onclick: function (e) {
+            e.stopPropagation();
+            var nn = global.prompt(t('renamePrompt'), run.fileName);
+            if (!nn || nn === run.fileName) return;
+            run.fileName = nn;
+            SM.memory.save(run).then(renderMemory);
+          }
+        });
+        var del = el('button', {
+          class: 'icon-btn', type: 'button', title: t('deleteRun'),
+          'aria-label': t('deleteRun'), text: '✕',
+          onclick: function (e) {
+            e.stopPropagation();
+            SM.memory.remove(run.id).then(function () {
+              if (run.id === state.runId) state.runId = null;
+              renderMemory();
+            });
+          }
+        });
+
+        list.appendChild(el('li', {
+          class: 'run-item' + (isCurrent ? ' is-current' : ''),
+          onclick: function () { openRun(run); }
+        }, [
+          el('span', { class: 'run-badge', text: String(i + 1) }),
+          el('span', { class: 'run-text' }, [name, meta]),
+          rename, del
+        ]));
+      });
+    }).catch(function (err) {
+      console.warn(err);
+      list.appendChild(el('li', { class: 'hint-sub', text: t('memoryUnavailable') }));
+    });
+  }
+
+  /* Reopen the most recent run on page load, so a refresh does not send the
+   * user back to the empty drop zone. Failure is silent: a corrupt or missing
+   * run must never stop the app from starting. */
+  function restoreSession() {
+    return SM.memory.latest()
+      .then(function (run) {
+        if (!run) return null;
+        return openRun(run).then(function () { return run; });
+      })
+      .catch(function (err) {
+        console.warn('session restore failed', err);
+        return null;
+      });
+  }
+
   /* ------------------------------------------------------------ tabs */
 
   var TABS = [
@@ -149,6 +358,7 @@
     { id: 'requests', label: 'overflow' },
     { id: 'warnings', label: 'warnings', badge: true },
     { id: 'files', label: 'tabsFiles' },
+    { id: 'memory', label: 'tabsMemory' },
     { id: 'settings', label: 'tabsSettings' }
   ];
 
@@ -598,6 +808,7 @@
   function renderFiles() {
     var host = $('#filesSummary');
     host.innerHTML = '';
+    renderSavePath();
     if (!state.model) return;
     var list = SM.package.flatList(state.model, genOpts());
     var counts = { weekly: 0, monthly: 0, zayavka: 0 };
@@ -651,6 +862,50 @@
     a.click();
     a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+    return url;
+  }
+
+  /* Keep the blob alive so "open file" can re-open it, and offer to do that
+   * straight away when the user asked for it.
+   *
+   * The honest position: a page cannot verify that a download landed on disk.
+   * Browsers route it silently and some suppress it entirely, so we never claim
+   * the file "was saved" - we say what we did and point at where to look. */
+  function offerOpen(url, name) {
+    if (lastZipUrl) URL.revokeObjectURL(lastZipUrl);
+    lastZipUrl = url; lastZipName = name;
+    renderSavePath();
+
+    if (state.saveAs && typeof global.showSaveFilePicker === 'function') {
+      // Chromium: the user picks the folder, so the destination is known.
+      var pick = global.showSaveFilePicker({ suggestedName: name });
+      return pick.then(function (handle) {
+        return handle.createWritable()
+          .then(function (writable) { return writable.write(url).then(function () { return writable.close(); }); })
+          .then(function () {
+            lastSavedPath = handle.name;
+            renderSavePath();
+            toast(t('savedTo') + ': ' + handle.name, 'ok');
+            if (state.autoOpen) global.open(url, '_blank');
+            return true;
+          });
+      }).catch(function (err) {
+        if (err && err.name === 'AbortError') { toast(t('saveCancelled'), 'error'); return false; }
+        // Any other failure: the download has already been triggered, so say so
+        // rather than implying nothing happened.
+        lastSavedPath = null;
+        renderSavePath();
+        toast(t('savedToDownloads'), 'error');
+        return false;
+      });
+    }
+
+    toast(t('savedToDownloads'), 'ok');
+    if (state.autoOpen) {
+      var w = global.open(url, '_blank');
+      if (!w) toast(t('cannotOpenHint'), 'error');
+    }
+    return true;
   }
 
   function generateAll() {
@@ -669,7 +924,7 @@
         return res.zip.generateAsync({ type: 'blob' });
       })
       .then(function (blob) {
-        downloadBlob(blob, state.rootFolder + '.zip');
+        offerOpen(downloadBlob(blob, zipFileName()), zipFileName());
         toast(t('filesReady') + ': ' + res_count(), 'ok');
       })
       .catch(function (err) {
@@ -777,6 +1032,10 @@
     $('#tFixed').textContent = t('fixedRooms');
     $('#tPref').textContent = t('teacherRooms');
     $('#treeTitle').textContent = t('generatedTree');
+    $('#savePathTitle').textContent = t('savePathTitle');
+    $('#lblOpenAfter').textContent = t('openAfter');
+    $('#lblSaveAs').textContent = t('saveAs');
+    renderSavePath();
     $('#recalcBtn').textContent = t('recalc');
     $('#unlockBtn').textContent = t('relockAll');
     $('#applySem').textContent = t('recalc');
@@ -829,7 +1088,20 @@
     else if (state.tab === 'warnings') renderWarnings();
     else if (state.tab === 'files') renderFiles();
     else if (state.tab === 'settings') renderSettings();
+    renderMemory();
     saveSettings();
+    persistSession();
+  }
+
+  /* Keep a lightweight pointer to the current run so a reload can restore it
+   * without waiting on the full history read. */
+  function persistSession() {
+    if (!state.fileBytes) return;
+    var run = snapshot();
+    run.id = state.runId || undefined;
+    run.savedAt = Date.now();
+    SM.memory.save(run).then(function (id) { state.runId = id; })
+      .catch(function () { /* private mode: memory simply is not available */ });
   }
 
   /* ------------------------------------------------------------ install (PWA) */
@@ -846,15 +1118,53 @@
     });
 
     btn.addEventListener('click', function () {
-      if (!deferred) return;
-      deferred.prompt();
-      deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
+      if (deferred) {
+        deferred.prompt();
+        deferred.userChoice.then(function () { deferred = null; btn.hidden = true; });
+        return;
+      }
+      // No programmatic prompt on this browser (Firefox, Safari, iOS). Show
+      // the manual steps for the platform instead of a button that does
+      // nothing when pressed.
+      showInstallHelp();
     });
 
     window.addEventListener('appinstalled', function () {
       btn.hidden = true;
       toast(t('installed') + ' ✓', 'ok');
     });
+
+    // Where the user would install from, used by the help text.
+    var ua = navigator.userAgent || '';
+    var isIOS = /iPad|iPhone|iPod/.test(ua) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    var isAndroid = /Android/.test(ua);
+
+    function manualSteps() {
+      if (isIOS) return [t('instIOS1'), t('instIOS2')];
+      if (isAndroid) return [t('instAndroid1'), t('instAndroid2')];
+      return [t('instDesktop1'), t('instDesktop2')];
+    }
+
+    function showInstallHelp() {
+      var steps = manualSteps();
+      var host = $('#installHelp');
+      if (!host) return;
+      host.innerHTML = '';
+      host.appendChild(el('div', { class: 'card-title', text: t('install') }));
+      var ol = el('ol', { class: 'install-steps' },
+        steps.map(function (s) { return el('li', { text: s }); }));
+      host.appendChild(ol);
+      host.appendChild(el('button', {
+        class: 'btn btn-sm', type: 'button', text: t('close'),
+        onclick: function () { host.hidden = true; }
+      }));
+      host.hidden = false;
+    }
+
+    // Browsers without beforeinstallprompt (Firefox, Safari, iOS) never fire the
+    // event, so the click handler above falls through to the manual steps and the
+    // button stays visible.
 
     // already installed as a standalone app
     try {
@@ -875,6 +1185,9 @@
     loadSettings();
     document.documentElement.setAttribute('data-theme', state.theme);
     applyLang();
+    // Reopen the last run in the background; the drop zone stays usable while
+    // this runs, so a slow IndexedDB never blocks the UI.
+    restoreSession();
 
     var dz = $('#dropzone'), input = $('#fileInput');
     dz.onclick = function () { input.click(); };
@@ -894,8 +1207,21 @@
     window.addEventListener('dragover', function (e) { e.preventDefault(); });
     window.addEventListener('drop', function (e) { e.preventDefault(); });
 
+    $('#saveRunBtn').onclick = function () {
+      if (!state.fileBytes) { toast(t('errNoModel'), 'error'); return; }
+      autosaveRun(state.fileName);
+      toast(t('autosavedRun'), 'ok');
+    };
+    $('#restoreRunBtn').onclick = function () {
+      SM.memory.latest().then(function (r) { if (r) openRun(r); else toast(t('noRuns'), 'error'); });
+    };
+    $('#clearRunsBtn').onclick = function () {
+      if (!global.confirm(t('clearRuns') + '?')) return;
+      SM.memory.clear().then(function () { state.runId = null; renderMemory(); });
+    };
     $('#newFileBtn').onclick = function () {
       state.grid = null; state.model = null; state.generated = null;
+      state.fileBytes = null; state.runId = null;
       $('#workSection').hidden = true;
       $('#uploadSection').hidden = false;
       renderUpload();
@@ -926,6 +1252,15 @@
       });
     };
     $('#generateBtn').onclick = generateAll;
+    $('#autoOpen').checked = state.autoOpen;
+    $('#autoOpen').onchange = function () { state.autoOpen = this.checked; saveSettings(); };
+    $('#saveAs').checked = state.saveAs;
+    $('#saveAs').onchange = function () { state.saveAs = this.checked; saveSettings(); };
+    $('#openFolderBtn').onclick = function () {
+      if (!lastZipUrl) { toast(t('errNoModel'), 'error'); return; }
+      var w = global.open(lastZipUrl, '_blank');
+      toast(w ? t('openedMsg') + ': ' + lastZipName : t('cannotOpenHint'), w ? 'ok' : 'error');
+    };
 
     $('#docLang').value = state.docLang;
     $('#docLang').onchange = function () { state.docLang = this.value; renderFiles(); saveSettings(); };
