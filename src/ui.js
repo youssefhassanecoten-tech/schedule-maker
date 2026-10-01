@@ -748,6 +748,13 @@
     // The drop zone is rebuilt from scratch, so it must be refreshed rather than
     // relabelled element by element.
     renderUpload();
+    var brandMark = $('#brandMark');
+    if (brandMark) {
+      brandMark.textContent = '';
+      brandMark.style.background = 'none';
+      brandMark.style.boxShadow = 'none';
+      brandMark.appendChild(el('img', { src: 'assets/icon-192.png', alt: '', width: '38', height: '38' }));
+    }
     $('#brandTitle').textContent = t('appTitle');
     $('#brandSub').textContent = t('appSubtitle');
     $('#newFileBtn').textContent = t('newFile');

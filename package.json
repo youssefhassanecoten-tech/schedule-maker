@@ -12,6 +12,7 @@
     "compare-week": "node tools/compare-week.js",
     "browser": "node tools/browser-test.js",
     "serve:test": "node tools/serve-test.js",
+    "live": "node tools/live-test.js",
     "icons": "node tools/make-icons.js",
     "shots": "node tools/shots.js"
   },

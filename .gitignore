@@ -2,9 +2,11 @@ node_modules/
 out-test*.docx
 out-test.zip
 browser-out.zip
+live-out.zip
 screenshot-*.png
 shots/
 samples/
+assets/_preview.png
 *.log
 .DS_Store
 Thumbs.db
