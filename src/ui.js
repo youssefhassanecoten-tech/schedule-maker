@@ -1162,9 +1162,12 @@
       host.hidden = false;
     }
 
-    // Browsers without beforeinstallprompt (Firefox, Safari, iOS) never fire the
-    // event, so the click handler above falls through to the manual steps and the
-    // button stays visible.
+    // Browsers without beforeinstallprompt never fire the event, so show the
+    // button anyway: the click handler above falls through to the per-platform
+    // manual steps instead of a dead prompt.
+    if (!('onbeforeinstallprompt' in window)) {
+      btn.hidden = false;
+    }
 
     // already installed as a standalone app
     try {

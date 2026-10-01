@@ -74,6 +74,59 @@ schedule generated/
 * The Zayavka form is filled with **date and time only** — `№ павильона` and
   `№ аудитории` stay blank on purpose, the department completes them by hand.
 
+### Two different week-to-month rules
+
+They answer different questions, so they differ on purpose:
+
+| What | Rule | Why |
+|---|---|---|
+| **Folder layout** (`weeksInMonth`) | a week is filed under the month of its **Monday** | every week appears exactly once, no duplicates |
+| **Monthly document** (`weeksOfMonth`) | a week is included if it **overlaps** the month | `2_Oktyabr_2026_G__1.doc` opens with week 5, whose Monday is 28.09, yet runs to 03.10 and belongs in the October document |
+
+Selecting on Monday alone would drop that week from the October document and
+leave it in September.
+
+---
+
+## Session memory
+
+The **Memory** tab keeps the last 10 runs so a refresh no longer sends you back
+to an empty drop zone — the old behaviour lost the whole grid on every reload.
+Runs can be reopened, renamed, deleted individually, or cleared in bulk.
+
+Storage is **IndexedDB** (`src/memory.js`), not `localStorage`: the source grid is
+a whole `.docx` and the ~5 MB `localStorage` ceiling would not hold ten of them.
+If IndexedDB is unavailable the feature degrades to in-memory only and the app
+still works; a corrupt or unparseable stored run shows an error and leaves you on
+the drop zone rather than blocking startup.
+
+Autosave reuses the current run's id instead of minting a new one, so repeated
+saves update one history entry instead of flooding the 10-run cap.
+
+`openRun` copies the stored bytes into a standalone `ArrayBuffer` before handing
+them to JSZip — passing the `Uint8Array`'s own buffer risks a view that runs past
+the end of the file, which produced *"Can't find end of central directory"* on
+stored runs.
+
+---
+
+## Monthly document fidelity
+
+The monthly table is measured against the department's own
+`2_Oktyabr_2026_G__1.doc` rather than guessed:
+
+* column profile in `SM.config.MONTHLY_PROFILE` — week `0.043`, time `0.058`, and
+  per day `0.20 / 0.43 / 0.175 / 0.195` of the usable text width, so the same
+  table lays out on any supported page size
+* `SM.config.MONTHLY_FONT_SZ = 10` — every run is `w:sz=10` (5pt), unbolded, as in
+  the reference
+* `SM.config.DEFAULT_PAGE_SIZE = 'A4'` with a `567tw` (1 cm) margin, and all three
+  time blocks including the evening one
+
+> The evening block is easy to miss: in the reference those rows carry a plain
+> (unmerged) `Время` cell rather than a `vMerge`, so a `vMerge`-only scan misses
+> them. They appear at the end of weeks 5, 7 and 9 of the October file.
+
 ---
 
 ## The rules it implements
