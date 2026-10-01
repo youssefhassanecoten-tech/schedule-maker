@@ -211,14 +211,18 @@
                * duplicated the label three times over. */
               vMerge: startsWeek ? 'restart' : 'continue'
             });
-            var tlabel = (s === 0 && r === 0)
+            var startsSlot = (r === 0);
+            /* The time label belongs to the SUB-SLOT, not to the block. A block
+             * such as 9.00-12.15 is drawn as two row groups (9.00-10.30 and
+             * 10.45-12.15) that repeat the same lessons with the same "№ темы",
+             * and each group carries its own label. Labelling only the first
+             * group left 10.45-12.15 and 14.55-16.25 blank in the column. */
+            var tlabel = startsSlot
               ? (ss.from + (ss.to ? ' – ' + ss.to : ''))
               : '';
-            // The time label is merged down its whole group, matching the
-            // reference: first row restarts the merge, the rest continue it.
             row.cell({
               text: tlabel, width: timeW, align: 'center', size: SZ,
-              vMerge: (s === 0 && r === 0) ? 'restart' : 'continue'
+              vMerge: startsSlot ? 'restart' : 'continue'
             });
             for (var d4 = 0; d4 < DAYS; d4++) {
               var o = days[d4][r];

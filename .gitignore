@@ -10,3 +10,7 @@ assets/_preview.png
 *.log
 .DS_Store
 Thumbs.db
+
+# generated inspection artefacts
+check-*.docx
+dept-monthly.json
