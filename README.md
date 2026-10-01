@@ -292,6 +292,37 @@ GitHub Pages is enabled on `main/` at the repository root. To change it:
 
 Pushing to `main` rebuilds the site. No workflow file is needed.
 
+### Push authentication
+
+Prefer the SSH deploy key over a personal access token — no secret ever has to be
+pasted into a chat or a terminal.
+
+The key pair already exists at `~/.ssh/schedule_maker_deploy`, with
+`~/.ssh/config` pointing `github.com` at it and GitHub's official host keys
+already in `known_hosts`. To finish the setup, add the **public** key as a
+deploy key with write access:
+
+**Repository → Settings → Deploy keys → Add deploy key**
+
+```
+ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKITCWLJzMx/QuB4r5Ms9uhJMnnEwT7sLsAyOpTQGWdB schedule-maker deploy key
+```
+
+Then point the remote at SSH:
+
+```bash
+git remote set-url origin git@github.com:youssefhassanecoten-tech/schedule-maker.git
+```
+
+A deploy key is scoped to this one repository and can be revoked without
+touching the account, which is why it is preferable to a classic token. A
+classic token carrying `repo` can write to **every** repository the account can
+reach, plus `admin:org` and `workflow`.
+
+If you push from more than one computer, give each its own deploy key
+(`ssh-keygen -t ed25519 -f ~/.ssh/schedule_maker_deploy -N '""'`) so they can be
+revoked individually.
+
 ---
 
 ## Tests
