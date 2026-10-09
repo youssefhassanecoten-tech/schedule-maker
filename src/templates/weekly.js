@@ -6,6 +6,8 @@
  *   each occupied cell reads:   269 (2-9)
  *                              5н-104
  *                              28.09
+ * A cell holds one such block per lesson: a teacher working with two groups in
+ * the same block lists both of them.
  */
 (function (global) {
   'use strict';
@@ -86,14 +88,18 @@
       var row = table.row();
       row.cell({ text: t.name, width: teacherW, size: 13, align: 'left' });
       SM.config.SLOTS.forEach(function (s) {
-        var cell = occ.filter(function (o) { return o.teacher === t.name && o.slot === s.idx; })[0];
-        if (!cell) { row.cell({ text: '' }); return; }
-        var lines = cellText(cell, week, lang);
+        /* One cell can hold more than one lesson: a teacher who works with two
+         * groups in the same block (their specifications overlap on this date).
+         * Keeping only the first silently lost 16 lessons over the term. */
+        var cells = occ.filter(function (o) { return o.teacher === t.name && o.slot === s.idx; });
+        if (!cells.length) { row.cell({ text: '' }); return; }
+        var lines = cellText(cells, week, lang);
+        var over = cells.some(function (o) { return o.overflow; });
         row.cell({
           text: lines,
           align: 'center',
           size: 13,
-          fill: cell.overflow && opts.highlightOverflow !== false ? 'FFFF00' : null
+          fill: over && opts.highlightOverflow !== false ? 'FFFF00' : null
         });
       });
     });
@@ -101,10 +107,24 @@
     return doc;
   }
 
-  function cellText(o, week, lang) {
-    var room = o.room || '';
-    var spec = o.specText ? ' (' + o.specText + ')' : '';
-    return o.group + spec + '\n' + weekLabel(week) + '-' + room + '\n' + U.fmtRu(o.date);
+  /*
+   * One block of text for every lesson in the cell.
+   * Same layout as the department's file - group, room, date - and a date is
+   * printed on each lesson, so a cell with two groups reads:
+   *
+   *     263А (15)
+   *     5н-104
+   *     08.12
+   *     267Б (15)
+   *     5н-8 пав.
+   *     08.12
+   */
+  function cellText(cells, week, lang) {
+    return cells.map(function (o) {
+      var room = o.room || '';
+      var spec = o.specText ? ' (' + o.specText + ')' : '';
+      return o.group + spec + '\n' + weekLabel(week) + '-' + room + '\n' + U.fmtRu(o.date);
+    }).join('\n');
   }
 
   SM.templateWeekly = { build: build, title: title, fileName: fileName, weekLabel: weekLabel };

@@ -39,20 +39,32 @@
       hr.cell({ text: h, width: cols[i], align: 'center', bold: true });
     });
 
-    var byDate = Object.create(null);
+    /* Flatten to one row per EXTRA ROOM, ordered by date then block. A block that
+     * needs three more rooms is one request for three rooms, so it must produce
+     * three rows - printing a single row would under-report the booking and the
+     * department would send fewer rooms than the schedule actually needs. */
+    var rows = [];
     requests.forEach(function (r) {
-      (byDate[r.date] || (byDate[r.date] = [])).push(r);
+      var n = r.needed != null ? r.needed : 1;
+      for (var i = 0; i < n; i++) {
+        rows.push({ date: r.date, block: r.block, blockLabel: r.blockLabel });
+      }
+    });
+    rows.sort(function (a, b) {
+      if (a.date !== b.date) return a.date < b.date ? -1 : 1;
+      var ka = a.block != null ? a.block : 0, kb = b.block != null ? b.block : 0;
+      return ka - kb;
     });
 
-    Object.keys(byDate).sort().forEach(function (date) {
-      byDate[date].forEach(function (r, idx) {
-        var row = table.row();
-        // the date is printed once per date, like in the original form
-        row.cell({ text: idx === 0 ? U.fmtRu(date) : '', width: cols[0], align: 'center' });
-        row.cell({ text: '', width: cols[1], align: 'center' });   // № павильона - blank
-        row.cell({ text: '', width: cols[2], align: 'center' });   // № аудитории  - blank
-        row.cell({ text: r.blockLabel, width: cols[3], align: 'center' });
-      });
+    var prevDate = null;
+    rows.forEach(function (r) {
+      var row = table.row();
+      // the date is printed once per date, like in the original form
+      row.cell({ text: r.date === prevDate ? '' : U.fmtRu(r.date), width: cols[0], align: 'center' });
+      prevDate = r.date;
+      row.cell({ text: '', width: cols[1], align: 'center' });   // № павильона - blank
+      row.cell({ text: '', width: cols[2], align: 'center' });   // № аудитории  - blank
+      row.cell({ text: r.blockLabel, width: cols[3], align: 'center' });
     });
 
     doc.empty();
