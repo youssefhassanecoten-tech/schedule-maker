@@ -516,7 +516,9 @@
 
     function timeRow(lookup, monISO) {
       var tr = el('tr', { class: 'timerow' });
-      tr.appendChild(el('th', { class: 'corner' }));
+      /* No corner cell here: the day row's corner has rowspan=2 and already
+       * covers this row's first column. Repeating it added a 16th column and
+       * shifted every time label one slot to the right of the lessons. */
       C.SLOTS.forEach(function (slot) {
         var b = C.BLOCK_BY_KEY[slot.block];
         tr.appendChild(el('th', { text: state.lang === 'en' ? b.labelEn : b.labelRu }));
