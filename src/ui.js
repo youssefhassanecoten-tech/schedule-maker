@@ -23,6 +23,9 @@
     semester: JSON.parse(JSON.stringify(C.semester)),
     rooms: C.ROOMS.slice(),
     files: { weekly: C.files.weekly, monthly: 'Raspisanie_M_{month}_{year}.docx', zayavka: C.files.zayavka },
+    /* Separate monthly schedules: [{ name, groups }] where groups is the text
+     * the user typed ("181, 182"). Everything not listed stays in the main flow. */
+    monthlySplits: [],
     rootFolder: C.output.rootFolder,
     weekFolderPrefix: C.output.weekFolderPrefix,
     autoOpen: false,
@@ -96,7 +99,8 @@
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
         lang: state.lang, theme: state.theme, semester: state.semester,
-        rooms: state.rooms, files: state.files, rootFolder: state.rootFolder,
+        rooms: state.rooms, files: state.files,
+        rootFolder: state.rootFolder, monthlySplits: state.monthlySplits,
         weekFolderPrefix: state.weekFolderPrefix, docLang: state.docLang,
         pageSize: state.pageSize, highlight: state.highlight, autoOpen: state.autoOpen, saveAs: state.saveAs,
         fixed: C.FIXED_ROOMS, pref: C.TEACHER_ROOM_PREF
@@ -113,6 +117,11 @@
       if (s.semester) state.semester = s.semester;
       if (Array.isArray(s.rooms) && s.rooms.length) state.rooms = s.rooms;
       if (s.files) state.files = Object.assign(state.files, s.files);
+      if (Array.isArray(s.monthlySplits)) {
+        state.monthlySplits = s.monthlySplits
+          .filter(function (x) { return x && typeof x === 'object'; })
+          .map(function (x) { return { name: String(x.name || ''), groups: String(x.groups || '') }; });
+      }
       if (s.fixed) C.FIXED_ROOMS = s.fixed;
       if (s.pref) C.TEACHER_ROOM_PREF = s.pref;
     } catch (e) { /* ignore */ }
@@ -197,6 +206,7 @@
       semester: JSON.parse(JSON.stringify(state.semester)),
       rooms: state.rooms.slice(),
       files: Object.assign({}, state.files),
+      monthlySplits: JSON.parse(JSON.stringify(state.monthlySplits)),
       rootFolder: state.rootFolder,
       pageSize: state.pageSize,
       highlight: state.highlight,
@@ -242,6 +252,11 @@
         if (run.semester) state.semester = Object.assign(state.semester, run.semester);
         if (Array.isArray(run.rooms) && run.rooms.length) state.rooms = run.rooms;
         if (run.files) state.files = Object.assign(state.files, run.files);
+        if (Array.isArray(run.monthlySplits)) {
+          state.monthlySplits = run.monthlySplits
+            .filter(function (x) { return x && typeof x === 'object'; })
+            .map(function (x) { return { name: String(x.name || ''), groups: String(x.groups || '') }; });
+        }
         if (run.rootFolder) state.rootFolder = run.rootFolder;
         if (run.pageSize) state.pageSize = run.pageSize;
         if (run.docLang) state.docLang = run.docLang;
@@ -801,6 +816,7 @@
       pageSize: state.pageSize,
       rootFolder: state.rootFolder,
       weekFolderPrefix: state.weekFolderPrefix,
+      monthlySplits: state.monthlySplits,
       months: SM.model.activeMonths(state.model)
     };
   }
@@ -967,6 +983,8 @@
     });
 
     var m = state.model;
+    renderSplits();
+
     var about = $('#aboutList');
     about.innerHTML = '';
     [['Source', state.fileName || '—'],
@@ -995,8 +1013,90 @@
     return el('div', { class: 'field' }, [el('label', { text: name }), sel]);
   }
 
-  /* ------------------------------------------------------------ chrome */
+  /* ---------------------------------------------- separate monthlies */
 
+  /*
+   * The editor only collects "name + group text". Everything else - which
+   * groups actually exist, which are unknown or duplicated, what stays in the
+   * main flow - is decided by SM.model.resolveSplits, the same function the
+   * package generator uses. That way the preview can never disagree with the
+   * documents.
+   */
+  function renderSplits() {
+    var host = $('#monthlySplits');
+    if (!host) return;
+    host.innerHTML = '';
+
+    state.monthlySplits.forEach(function (s, i) {
+      var nameInput = el('input', { type: 'text', value: s.name || '', placeholder: t('splitNameExample') });
+      var groupsInput = el('input', { type: 'text', value: s.groups || '', placeholder: '181, 182' });
+      var issues = el('div', { class: 'issues' });
+
+      /* Re-run the same planner the generator uses, so the row message and the
+       * produced documents can never disagree. */
+      function validate() {
+        if (!state.model) { issues.textContent = ''; issues.className = 'issues'; return; }
+        var plan = SM.model.resolveSplits(state.model, state.monthlySplits);
+        var p = plan.schedules[i];
+        var msgs = [], isError = false;
+        if (!String(s.groups || '').trim()) msgs.push(t('splitNoGroups'));
+        else {
+          msgs.push(p.groups.length + ' ' + t('splitDetected') + (p.groups.length ? ': ' + p.groups.join(', ') : ''));
+          if (p.unknown.length) { msgs.push(t('splitUnknown') + ': ' + p.unknown.join(', ')); isError = true; }
+          if (p.duplicate.length) { msgs.push(t('splitDuplicate') + ': ' + p.duplicate.join(', ')); isError = true; }
+        }
+        issues.textContent = msgs.join(' · ');
+        issues.className = 'issues' + (isError ? ' is-error' : '');
+      }
+
+      nameInput.oninput = function () {
+        s.name = nameInput.value;
+        saveSettings();
+        renderSplitsSummary();
+        renderFiles();
+      };
+      groupsInput.oninput = function () {
+        s.groups = groupsInput.value;
+        saveSettings();
+        validate();
+        renderSplitsSummary();
+        renderFiles();
+      };
+
+      var row = el('div', { class: 'split-row' }, [
+        el('div', { class: 'field' }, [el('label', { text: t('splitName') }), nameInput]),
+        el('div', { class: 'field' }, [el('label', { text: t('splitGroups') }), groupsInput]),
+        el('button', {
+          class: 'btn btn-sm', type: 'button', text: '✕', title: t('splitRemove'),
+          onclick: function () {
+            state.monthlySplits.splice(i, 1);
+            saveSettings();
+            renderSplits();
+            renderFiles();
+          }
+        })
+      ]);
+      row.appendChild(issues);
+      host.appendChild(row);
+      validate();
+    });
+
+    renderSplitsSummary();
+  }
+
+  function renderSplitsSummary(plan) {
+    var host = $('#splitsSummary');
+    if (!host) return;
+    if (!state.model) { host.textContent = ''; return; }
+    plan = plan || SM.model.resolveSplits(state.model, state.monthlySplits);
+
+    var text = t('splitMain') + ' (' + plan.mainGroups.length + ')';
+    if (!plan.mainGroups.length) text += ' — ' + t('splitMainNone');
+    else if (plan.mainGroups.length <= 30) text += ' — ' + plan.mainGroups.join(', ');
+    host.textContent = text;
+  }
+
+  /* ------------------------------------------------------------ chrome */
   function applyLang() {
     document.documentElement.lang = state.lang;
     I.set(state.lang);
@@ -1030,7 +1130,11 @@
     $('#tSem').textContent = t('settings');
     $('#tFiles').textContent = t('filePatterns');
     $('#tFixed').textContent = t('fixedRooms');
-    $('#tPref').textContent = t('teacherRooms');
+    if ($('#tPref')) $('#tPref').textContent = t('teacherRooms');
+    $('#tSplits').textContent = t('monthlySplits');
+    $('#splitsHint').textContent = t('monthlySplitsHint');
+    $('#addSplit').textContent = '+ ' + t('splitAdd');
+    renderSplits();
     $('#treeTitle').textContent = t('generatedTree');
     $('#savePathTitle').textContent = t('savePathTitle');
     $('#lblOpenAfter').textContent = t('openAfter');
@@ -1306,9 +1410,20 @@
       state.rooms = C.ROOMS.slice();
       state.files = { weekly: C.files.weekly, monthly: 'Raspisanie_M_{month}_{year}.docx', zayavka: C.files.zayavka };
       state.rootFolder = C.output.rootFolder;
+      state.monthlySplits = [];
+      saveSettings();
       rebuildModel();
       renderAll();
     };
+
+    if ($('#addSplit')) {
+      $('#addSplit').onclick = function () {
+        state.monthlySplits.push({ name: '', groups: '' });
+        saveSettings();
+        renderSplits();
+        renderFiles();
+      };
+    }
 
     window.addEventListener('keydown', function (e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;

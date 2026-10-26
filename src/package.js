@@ -20,6 +20,10 @@
     var weekPrefix = opts.weekFolderPrefix != null ? opts.weekFolderPrefix : SM.config.output.weekFolderPrefix;
     var lang = opts.lang || 'ru';
     var months = opts.months || SM.model.activeMonths(model);
+    /* Only the monthly document is split; weeks and the request keep using the
+     * complete model. resolveSplits also tells us which groups stay in the main
+     * flow, so the main monthly is never duplicated. */
+    var plan = SM.model.resolveSplits(model, opts.monthlySplits);
 
     var entries = [];
     var rootNode = { path: root, children: {}, files: [] };
@@ -27,10 +31,38 @@
     months.forEach(function (m) {
       var folder = monthFolderName(m, lang, opts);
       var monthNode = node(rootNode, folder);
-      monthNode.files.push({
-        name: SM.templateMonthly.fileName(m.year, m.month, model),
-        kind: 'monthly',
-        doc: function () { return SM.templateMonthly.build(model, m.year, m.month, opts); }
+      var usedNames = Object.create(null);
+
+      if (plan.mainGroups.length) {
+        /* With splits configured the main monthly must NOT repeat the groups
+         * that were sent to a separate document; without splits this is the
+         * whole model, unchanged. */
+        var mainModel = plan.schedules.length
+          ? SM.model.monthlyView(model, plan.mainGroups)
+          : model;
+        monthNode.files.push({
+          name: SM.templateMonthly.fileName(m.year, m.month, model),
+          kind: 'monthly',
+          doc: function () { return SM.templateMonthly.build(mainModel, m.year, m.month, opts); }
+        });
+      }
+
+      plan.schedules.forEach(function (s) {
+        if (!s.groups.length) return;
+        var view = SM.model.monthlyView(model, s.groups);
+        /* A flow with nothing to teach in this month is not a document the
+         * department can use - leave it out instead of shipping a bare header. */
+        var hasLessons = SM.templateMonthly.weeksOfMonth(view, m.year, m.month)
+          .some(function (w) { return (view.byWeek[w] || []).length > 0; });
+        if (!hasLessons) return;
+        var name = flowFileName(m.year, m.month, model, s.label, usedNames);
+        monthNode.files.push({
+          name: name,
+          kind: 'monthly',
+          flow: s.label,
+          groups: s.groups.slice(),
+          doc: function () { return SM.templateMonthly.build(view, m.year, m.month, opts); }
+        });
       });
 
       SM.model.weeksInMonth(model, m.year, m.month).forEach(function (w) {
@@ -55,7 +87,25 @@
       entries.push({ month: m, folder: folder });
     });
 
-    return { root: rootNode, months: entries };
+    return { root: rootNode, months: entries, splits: plan };
+  }
+
+  /* File name for a split monthly: the usual pattern with "_<flow>" inserted
+   * before the extension, e.g. Raspisanie_M_Oktyabr_2026_Bakalavry.docx */
+  function flowFileName(year, month, model, label, used) {
+    var base = SM.templateMonthly.fileName(year, month, model);
+    var suffix = String(label || '').trim().replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\s+/g, '_');
+    if (!suffix) return base;
+    var dot = base.lastIndexOf('.');
+    var stem = dot > 0 ? base.slice(0, dot) : base;
+    var ext = dot > 0 ? base.slice(dot) : '';
+    var name = stem + '_' + suffix + ext;
+    if (used) {
+      var n = 2;
+      while (used[name]) { name = stem + '_' + suffix + '-' + n + ext; n++; }
+      used[name] = true;
+    }
+    return name;
   }
 
   function monthFolderName(m, lang, opts) {

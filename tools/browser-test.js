@@ -123,6 +123,28 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.waitForTimeout(700);
   console.log('  after reset, week selector has', (await page.$$eval('#weekSel option', o => o.length)), 'options');
 
+  // ---- separate monthly schedules ----
+  console.log('\n=== MONTHLY SPLITS ===');
+  await clickTab('settings');
+  const splitGroups = await page.evaluate(() => {
+    const m = SM.ui.state.model;
+    return SM.model.allGroups(m).filter(g => /^\d{3,4}$/.test(g)).slice(0, 2);
+  });
+  await page.click('#addSplit');
+  await page.waitForTimeout(250);
+  let splitInputs = await page.$$('#monthlySplits .split-row input');
+  await splitInputs[0].fill('Бакалавры');
+  await splitInputs[1].fill(splitGroups.join(', '));
+  await page.waitForTimeout(500);
+  console.log('  groups:', splitGroups.join(', '));
+  console.log('  summary:', (await page.textContent('#splitsSummary')).trim());
+  await clickTab('files');
+  const treeText = await page.textContent('#fileTree');
+  const monthlyLines = treeText.split('\n').filter(l => /Raspisanie_M_/.test(l));
+  const splitLines = monthlyLines.filter(l => /Бакалавры/.test(l));
+  console.log('  monthly files:', monthlyLines.length, '| with flow suffix:', splitLines.length);
+  if (!splitLines.length) throw new Error('the split monthly is not listed in the Files tab');
+
   // ---- generate the ZIP ----
   console.log('\n=== GENERATE ===');
   await clickTab('files');
@@ -133,6 +155,13 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   const out = path.join(ROOT, 'browser-out.zip');
   await download.saveAs(out);
   console.log('  downloaded:', download.suggestedFilename(), fs.statSync(out).size, 'bytes');
+
+  // the generated archive must actually contain the split documents
+  const zip = await require('jszip').loadAsync(fs.readFileSync(out));
+  const zipDocs = Object.keys(zip.files).filter(n => /\.docx$/.test(n));
+  const zipSplit = zipDocs.filter(n => /Бакалавры/.test(n));
+  console.log('  split documents in zip:', zipSplit.length, zipSplit[0] ? '(' + zipSplit[0] + ')' : '');
+  if (!zipSplit.length) throw new Error('the generated zip has no split monthly document');
 
   // ---- language switch ----
   console.log('\n=== LANGUAGE ===');

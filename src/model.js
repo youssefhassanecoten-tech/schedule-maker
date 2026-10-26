@@ -108,6 +108,100 @@
     return model;
   }
 
-  SM.model = { createModel: createModel, recompute: recompute, weeksInMonth: weeksInMonth, activeMonths: activeMonths };
+  /* All group codes present in the source grid, sorted. */
+  function allGroups(model) {
+    var seen = Object.create(null), out = [];
+    model.occurrences.forEach(function (o) {
+      if (!seen[o.group]) { seen[o.group] = true; out.push(o.group); }
+    });
+    return out.sort(function (a, b) { return a < b ? -1 : a > b ? 1 : 0; });
+  }
+
+  /* "181, 182; 263А" -> ['181', '182', '263А'] (unknown tokens dropped). */
+  function parseGroupList(text) {
+    var out = [];
+    String(text || '').split(/[,\s;]+/).forEach(function (tok) {
+      var g = U.normalizeGroup(tok);
+      if (g && out.indexOf(g) < 0) out.push(g);
+    });
+    return out;
+  }
+
+  /*
+   * Turn the user's "separate monthly schedules" setting into a plan.
+   *
+   *   splits: [{ name, groups }]   groups is free text typed by the user
+   *
+   * Returns
+   *   { schedules: [{ label, groups, unknown, duplicate }], mainGroups }
+   *
+   * The main flow is every group the user did NOT assign to a schedule. A group
+   * is only assigned to the first schedule that mentions it; a repeated or
+   * unknown code is reported instead of silently disappearing.
+   */
+  function resolveSplits(model, splits) {
+    var available = Object.create(null);
+    var every = allGroups(model);
+    every.forEach(function (g) { available[g] = true; });
+
+    var used = Object.create(null);
+    var schedules = [];
+    (splits || []).forEach(function (s, i) {
+      var groups = [], unknown = [], duplicate = [];
+      parseGroupList(s && s.groups).forEach(function (g) {
+        if (!available[g]) { if (unknown.indexOf(g) < 0) unknown.push(g); return; }
+        if (used[g]) { if (duplicate.indexOf(g) < 0) duplicate.push(g); return; }
+        used[g] = true;
+        groups.push(g);
+      });
+      var name = String((s && s.name) || '').trim();
+      schedules.push({
+        label: name || ('flow-' + (i + 1)),
+        name: name,
+        groups: groups,
+        unknown: unknown,
+        duplicate: duplicate
+      });
+    });
+
+    return {
+      schedules: schedules,
+      mainGroups: every.filter(function (g) { return !used[g]; })
+    };
+  }
+
+  /*
+   * A monthly-only view of the model. It filters the occurrences but keeps the
+   * very same objects, so a group carries exactly the № темы and the room it
+   * has in the main schedule - splitting must never renumber or reallocate.
+   */
+  function monthlyView(model, groups) {
+    var set = Object.create(null);
+    (groups || []).forEach(function (g) { set[g] = true; });
+
+    var occ = model.occurrences.filter(function (o) { return set[o.group]; });
+    var byWeek = {}, byMonth = {};
+    occ.forEach(function (o) {
+      (byWeek[o.week] || (byWeek[o.week] = [])).push(o);
+      var mk = o.date.slice(0, 7);
+      (byMonth[mk] || (byMonth[mk] = [])).push(o);
+    });
+
+    return {
+      semester: model.semester,
+      teachers: model.teachers,
+      occurrences: occ,
+      byWeek: byWeek,
+      byMonth: byMonth,
+      files: model.files,
+      groups: (groups || []).slice()
+    };
+  }
+
+  SM.model = {
+    createModel: createModel, recompute: recompute, weeksInMonth: weeksInMonth,
+    activeMonths: activeMonths, allGroups: allGroups, parseGroupList: parseGroupList,
+    resolveSplits: resolveSplits, monthlyView: monthlyView
+  };
 
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -42,7 +42,14 @@ documents.
   entries and feeds the Zayavka. Overflow is counted per `(date, block)`, not
   per day.
 * **The Zayavka is never auto-filled with rooms.** Date and time only; pavilion
-  and room stay blank by design.
+  and room stay blank by design. **One row per extra room** — a block that needs
+  three more rooms produces three rows, not one.
+* **Separate monthly schedules only filter the monthly document.** Groups listed
+  in Settings → "Отдельные месячные расписания" get their own monthly `.docx`
+  (same month folder, `_<name>` suffix) and are removed from the main monthly.
+  Weekly schedules and the Zayavka stay single and still cover every group.
+  A split is a **view**: never renumber and never reallocate rooms for it, or the
+  split document would disagree with the main schedule.
 * **Week 1 Monday = 31.08.2026** and the term is **24 weeks** — 22 is not enough,
   `10.02.2027` (referenced by `(07.10-10.02)`) falls in week 24.
 * **Slot indices are 0=Mon..5=Sat for `slot.day`, but JavaScript's
