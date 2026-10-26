@@ -160,6 +160,11 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   const zip = await require('jszip').loadAsync(fs.readFileSync(out));
   const zipDocs = Object.keys(zip.files).filter(n => /\.docx$/.test(n));
   const zipSplit = zipDocs.filter(n => /Бакалавры/.test(n));
+  const zipYears = [...new Set(zipDocs.map(n => (n.match(/\/(\d{4})\//) || [])[1]).filter(Boolean))];
+  console.log('  year folders in zip:', zipYears.join(', '));
+  if (!zipDocs.every(n => /\/(\d{4})\/[^/]+\//.test(n))) {
+    throw new Error('a document is not inside <year>/<month>/');
+  }
   console.log('  split documents in zip:', zipSplit.length, zipSplit[0] ? '(' + zipSplit[0] + ')' : '');
   if (!zipSplit.length) throw new Error('the generated zip has no split monthly document');
 

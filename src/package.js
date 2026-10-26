@@ -1,13 +1,20 @@
 /* Schedule Maker - builds the delivery folder tree and zips it.
  *
  *   schedule generated/
- *     01_September/
- *       Raspisanie_M_September_2026.docx
- *       Week 1/
- *         Raspisanie_S_31_08_2026_Na_-1n.docx
- *         Zayavka_Na_Aud_21_N.docx      (only when that week needs extra rooms)
- *       Week 2/
+ *     2026/
+ *       09_sentyabr/
+ *         Raspisanie_M_September_2026.docx
+ *         Week 1/
+ *           Raspisanie_S_31_08_2026_Na_-1n.docx
+ *           Zayavka_Na_Aud_21_N.docx    (only when that week needs extra rooms)
+ *         Week 2/
+ *         ...
+ *     2027/
+ *       01_yanvar/
  *       ...
+ *
+ * The year level comes first so a calendar sort puts January 2027 after
+ * December 2026 instead of next to January 2026.
  */
 (function (global) {
   'use strict';
@@ -30,7 +37,8 @@
 
     months.forEach(function (m) {
       var folder = monthFolderName(m, lang, opts);
-      var monthNode = node(rootNode, folder);
+      var yearNode = node(rootNode, String(m.year));
+      var monthNode = node(yearNode, folder);
       var usedNames = Object.create(null);
 
       if (plan.mainGroups.length) {
@@ -84,7 +92,7 @@
           });
         }
       });
-      entries.push({ month: m, folder: folder });
+      entries.push({ month: m, folder: folder, year: m.year });
     });
 
     return { root: rootNode, months: entries, splits: plan };
@@ -147,27 +155,20 @@
     if (!JSZipCtor) return Promise.reject(new Error('JSZip is not loaded'));
     var mf = manifest(model, opts);
     var zip = new JSZipCtor();
-    var root = zip.folder(mf.root.path);
     var conv = opts.converter;
     var jobs = [];
 
-    Object.keys(mf.root.children).forEach(function (monthName) {
-      var mNode = mf.root.children[monthName];
-      var mFolder = root.folder(monthName);
-      mNode.files.forEach(function (f) {
+    /* Walk the manifest tree to any depth: root -> year -> month -> week. */
+    (function emit(n, folder) {
+      n.files.forEach(function (f) {
         jobs.push(toBlob(f, JSZipCtor, conv).then(function (blob) {
-          mFolder.file(f.name, blob);
+          folder.file(f.name, blob);
         }));
       });
-      Object.keys(mNode.children).forEach(function (weekName) {
-        var wFolder = mFolder.folder(weekName);
-        mNode.children[weekName].files.forEach(function (f) {
-          jobs.push(toBlob(f, JSZipCtor, conv).then(function (blob) {
-            wFolder.file(f.name, blob);
-          }));
-        });
+      Object.keys(n.children).forEach(function (childName) {
+        emit(n.children[childName], folder.folder(childName));
       });
-    });
+    })(mf.root, zip.folder(mf.root.path));
 
     return Promise.all(jobs).then(function () {
       return { zip: zip, manifest: mf, count: countFiles(mf.root) };

@@ -50,22 +50,26 @@ drop it at `assets/icon-source.png` and resize it to the sizes listed in
 
 ```
 schedule generated/
-├── 09_sentyabr/
-│   ├── Raspisanie_M_September_2026.docx      ← monthly schedule
-│   ├── Week 2/
-│   │   └── Raspisanie_S_07_09_2026_Na_-2n.docx   ← weekly schedule
-│   ├── Week 3/
-│   ├── Week 4/
-│   └── Week 5/
-│       ├── Raspisanie_S_28_09_2026_Na_-5n.docx
-│       └── Zayavka_Na_Aud_21_N.docx          ← only if rooms overflow
-│   ...
-├── 10_oktyabr/
-├── 11_noyabr/
-├── 12_dekabr/
-├── 01_yanvar/
-└── 02_fevral/
+├── 2026/
+│   ├── 09_sentyabr/
+│   │   ├── Raspisanie_M_September_2026.docx      ← monthly schedule
+│   │   ├── Week 2/
+│   │   │   └── Raspisanie_S_07_09_2026_Na_-2n.docx   ← weekly schedule
+│   │   ├── Week 3/
+│   │   ├── Week 4/
+│   │   └── Week 5/
+│   │       ├── Raspisanie_S_28_09_2026_Na_-5n.docx
+│   │       └── Zayavka_Na_Aud_21_N.docx          ← only if rooms overflow
+│   ├── 10_oktyabr/
+│   ├── 11_noyabr/
+│   └── 12_dekabr/
+└── 2027/
+    ├── 01_yanvar/
+    └── 02_fevral/
 ```
+
+* Folders are **year → month**, so January 2027 sorts after December 2026
+  instead of next to January 2026.
 
 * A week is filed under the month that contains its **Monday**, so every week
   appears exactly once.

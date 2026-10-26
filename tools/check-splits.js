@@ -130,14 +130,26 @@ function monthlyLessons(xml) {
     .map(x => x.path + '|' + x.f.kind).sort().join('\n');
   check(wk(baseFiles) === wk(splitFiles), 'week folders changed after adding a split');
 
-  const splitNamePattern = new RegExp('_' + FLOW.replace(/\s+/g, '_') + '\\.docx$');
-  const splitMonthlies = splitFiles.filter(x => x.f.kind === 'monthly' && splitNamePattern.test(x.f.name));
+  const splitNamePattern = new RegExp('_' + FLOW.replace(/\s+/g, '_') + '\\.docx$');  const splitMonthlies = splitFiles.filter(x => x.f.kind === 'monthly' && splitNamePattern.test(x.f.name));
   check(splitMonthlies.length > 0, 'no file got the flow suffix');
   const mainMonthlies = splitFiles.filter(x => x.f.kind === 'monthly' && !splitNamePattern.test(x.f.name));
   check(mainMonthlies.length > 0, 'the main monthly disappeared');
   console.log('monthly files  :', countOf(splitFiles, 'monthly'),
     '(main ' + mainMonthlies.length + ', split ' + splitMonthlies.length + ')');
   console.log('weekly/request :', countOf(splitFiles, 'weekly'), '/', countOf(splitFiles, 'zayavka'));
+
+  // folders are year -> month, and January 2027 must follow December 2026
+  const monthKeys = splitFiles.filter(x => x.f.kind === 'monthly').map(x => {
+    const m = x.path.match(/\/(\d{4})\/(\d{2})_/);
+    return m ? +m[1] * 100 + +m[2] : null;
+  });
+  check(monthKeys.every(k => k !== null), 'a monthly file is not inside <year>/<month>/');
+  check(monthKeys.every((k, i) => i === 0 || monthKeys[i - 1] <= k),
+    'month folders are not in chronological order');
+  const years = [...new Set(splitFiles
+    .filter(x => x.f.kind === 'monthly')
+    .map(x => (x.path.match(/\/(\d{4})\//) || [])[1]))];
+  console.log('year folders   :', years.join(', '));
 
   // ---- 3. document contents ---------------------------------------------
   function readDoc(f) {
