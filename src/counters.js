@@ -17,6 +17,10 @@
   var SM = global.SM || (global.SM = {});
   var U = SM.util;
 
+  /* Online ("-ДО") and in-person lessons of the same group share one topic
+   * sequence, so the counter is keyed on the group without the -ДО marker. */
+  function keyOf(o) { return o.counterGroup || o.group; }
+
   function countLessons(occurrences, options) {
     options = options || {};
     var byName = Object.create(null);
@@ -24,7 +28,7 @@
     // 1) Lessons of unsuffixed groups always start at 1.
     occurrences.forEach(function (o) {
       if (!o.groupSuffix) {
-        (byName[o.group] || (byName[o.group] = [])).push(o);
+        (byName[keyOf(o)] || (byName[keyOf(o)] = [])).push(o);
       }
     });
 
@@ -37,32 +41,33 @@
     //    actually finished before the suffixed group started.
     var startValue = Object.create(null);
     occurrences.forEach(function (o) {
-      if (startValue[o.group] !== undefined) return;
-      startValue[o.group] = 1;
+      if (startValue[keyOf(o)] !== undefined) return;
+      startValue[keyOf(o)] = 1;
     });
     occurrences.forEach(function (o) {
       if (!o.groupSuffix) return;
-      if (startValue[o.group] !== 1) return;      // already decided
+      if (startValue[keyOf(o)] !== 1) return;      // already decided
       var base = o.groupBase;
       var baseLessons = byName[base];
       if (!baseLessons || !baseLessons.length) return;
       // Only inherit when every base lesson happened before this group's first one.
-      var firstSuffixed = firstDateOf(occurrences, o.group);
+      var firstSuffixed = firstDateOf(occurrences, keyOf(o));
       var lastBase = lastDateOf(baseLessons);
       if (lastBase < firstSuffixed) {
-        startValue[o.group] = baseLessons.length + 1;
+        startValue[keyOf(o)] = baseLessons.length + 1;
       } else {
-        startValue[o.group] = 1;
+        startValue[keyOf(o)] = 1;
       }
     });
 
     // 3) Number each group independently, in chronological order.
     var counters = Object.create(null);
     occurrences.forEach(function (o) {
-      if (counters[o.group] === undefined) counters[o.group] = (startValue[o.group] || 1) - 1;
-      counters[o.group] += 1;
-      o.topic = counters[o.group];
-      o.counterStart = startValue[o.group] || 1;
+      var k = keyOf(o);
+      if (counters[k] === undefined) counters[k] = (startValue[k] || 1) - 1;
+      counters[k] += 1;
+      o.topic = counters[k];
+      o.counterStart = startValue[k] || 1;
     });
 
     occurrences.forEach(function (o) {
@@ -76,10 +81,10 @@
     };
   }
 
-  function firstDateOf(occ, group) {
+  function firstDateOf(occ, groupKey) {
     var best = null;
     for (var i = 0; i < occ.length; i++) {
-      if (occ[i].group !== group) continue;
+      if (keyOf(occ[i]) !== groupKey) continue;
       if (best === null || occ[i].date < best) best = occ[i].date;
     }
     return best;

@@ -93,6 +93,9 @@
             group: e.group,
             groupBase: U.groupBase(e.group),
             groupSuffix: U.groupSuffix(e.group),
+            counterGroup: U.counterGroup(e.group),
+            prep: U.isPrep(e.group),
+            online: U.isOnline(e.group),
             slot: slot.idx,
             day: slot.day,
             block: slot.block,
@@ -124,7 +127,7 @@
   function detectConflicts(occ, warnings) {
     var byGroup = Object.create(null), byTeacher = Object.create(null);
     occ.forEach(function (o) {
-      var gk = [o.group, o.date, o.block].join('|');
+      var gk = [U.counterGroup(o.group), o.date, o.block].join('|');
       if (byGroup[gk]) {
         warnings.push('Group ' + o.group + ' has two lessons on ' + U.fmtRuLong(o.date) + ' ' +
                       SM.config.BLOCK_BY_KEY[o.block].labelRu + ' (' + byGroup[gk].teacher + ' and ' + o.teacher + ')');

@@ -102,25 +102,53 @@
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
 
-  /* Group code: leading digits + optional Cyrillic letter suffix. */
-  var RE_GROUP = /^(\d{3,4})\s*([А-Яа-я]?)\.?$/;
+  /* Group codes come in three shapes:
+   *   263 / 263А           regular groups
+   *   ПО-2 / ПО-орд.2      preparatory course (ПО), optional "орд." level
+   * any of which may carry -ДО for a distance (online) lesson.
+   * The number after ПО is part of the group identity, not a week: ПО-2 is group
+   * 2 of the preparatory course. */
+  var RE_GROUP = /^(\d{3,4})([А-Яа-я])?\.?(-ДО)?$/i;
+  var RE_PREP = /^ПО(?:-?ОРД)?\.?-?(\d{1,3})(-ДО)?$/i;
 
   function normalizeGroup(raw) {
     var g = normalizeText(raw).replace(/\s+/g, '');
+    if (!g) return null;
+
+    var p = g.match(RE_PREP);
+    if (p) {
+      var ord = /ОРД/i.test(g) ? '-орд.' : '-';
+      var online = p[2] ? '-ДО' : '';
+      return 'ПО' + ord + p[1] + online;
+    }
+
     var m = g.match(RE_GROUP);
     if (!m) return null;
     var suf = m[2] ? m[2].toUpperCase() : '';
-    return m[1] + suf;
+    var dist = m[3] ? '-ДО' : '';
+    return m[1] + suf + dist;
   }
+
+  /* Preparatory-course group: excluded from the monthly schedule. */
+  function isPrep(group) { return /^ПО(?:-орд\.)?-?\d/i.test(String(group || '')); }
+
+  /* Distance (online) lesson: no room is allocated. */
+  function isOnline(group) { return /-ДО$/i.test(String(group || '')); }
+
+  /* Counter family: the same group taught online and in person shares one
+   * "№ темы" sequence, so the -ДО marker is not part of the counter key. */
+  function counterGroup(group) { return String(group || '').replace(/-ДО$/i, ''); }
 
   /* Base number without the letter suffix -> used for counter families. */
   function groupBase(group) {
-    var m = String(group).match(/^(\d{3,4})/);
-    return m ? m[1] : group;
+    var g = counterGroup(group);
+    var m = g.match(/^(\d{3,4})/);
+    return m ? m[1] : g;
   }
 
   function groupSuffix(group) {
-    var m = String(group).match(/^(\d{3,4})([А-Яа-я]?)$/);
+    var g = counterGroup(group);
+    var m = g.match(/^(\d{3,4})([А-Яа-я]?)$/);
     return m && m[2] ? m[2].toUpperCase() : '';
   }
 
@@ -139,6 +167,7 @@
     normalizeText: normalizeText, flat: flat, lines: lines,
     unique: unique, clone: clone,
     normalizeGroup: normalizeGroup, groupBase: groupBase, groupSuffix: groupSuffix,
+    isPrep: isPrep, isOnline: isOnline, counterGroup: counterGroup,
     surname: surname
   };
 

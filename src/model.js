@@ -142,13 +142,18 @@
   function resolveSplits(model, splits) {
     var available = Object.create(null);
     var every = allGroups(model);
-    every.forEach(function (g) { available[g] = true; });
+    /* Preparatory courses (ПО) never appear in a monthly schedule, so they are
+     * not part of the monthly flow accounting: not in the main flow, and not
+     * assignable to a split. */
+    var monthlyGroups = every.filter(function (g) { return !U.isPrep(g); });
+    monthlyGroups.forEach(function (g) { available[g] = true; });
 
     var used = Object.create(null);
     var schedules = [];
     (splits || []).forEach(function (s, i) {
-      var groups = [], unknown = [], duplicate = [];
+      var groups = [], unknown = [], duplicate = [], excluded = [];
       parseGroupList(s && s.groups).forEach(function (g) {
+        if (U.isPrep(g)) { if (excluded.indexOf(g) < 0) excluded.push(g); return; }
         if (!available[g]) { if (unknown.indexOf(g) < 0) unknown.push(g); return; }
         if (used[g]) { if (duplicate.indexOf(g) < 0) duplicate.push(g); return; }
         used[g] = true;
@@ -160,13 +165,14 @@
         name: name,
         groups: groups,
         unknown: unknown,
-        duplicate: duplicate
+        duplicate: duplicate,
+        excluded: excluded
       });
     });
 
     return {
       schedules: schedules,
-      mainGroups: every.filter(function (g) { return !used[g]; })
+      mainGroups: monthlyGroups.filter(function (g) { return !used[g]; })
     };
   }
 
@@ -179,7 +185,9 @@
     var set = Object.create(null);
     (groups || []).forEach(function (g) { set[g] = true; });
 
-    var occ = model.occurrences.filter(function (o) { return set[o.group]; });
+    var occ = model.occurrences.filter(function (o) {
+      return set[o.group] && !U.isPrep(o.group);
+    });
     var byWeek = {}, byMonth = {};
     occ.forEach(function (o) {
       (byWeek[o.week] || (byWeek[o.week] = [])).push(o);

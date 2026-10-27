@@ -121,9 +121,11 @@
    */
   function cellText(cells, week, lang) {
     return cells.map(function (o) {
-      var room = o.room || '';
+      /* A distance lesson has no auditorium: print the week without a room
+       * instead of an empty "5н-". */
+      var room = o.room ? '-' + o.room : '';
       var spec = o.specText ? ' (' + o.specText + ')' : '';
-      return o.group + spec + '\n' + weekLabel(week) + '-' + room + '\n' + U.fmtRu(o.date);
+      return o.group + spec + '\n' + weekLabel(week) + room + '\n' + U.fmtRu(o.date);
     }).join('\n');
   }
 

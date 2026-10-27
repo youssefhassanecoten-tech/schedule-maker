@@ -189,6 +189,38 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.screenshot({ path: path.join(ROOT, 'screenshot-dark.png') });
   console.log('  screenshots written');
 
+  // ---- ПО / -ДО rendering (synthetic grid: the sample has neither) ----
+  console.log('\n=== PREP / ONLINE UI ===');
+  const uiInfo = await page.evaluate(() => {
+    const mk = (name, slot, text) => {
+      const cells = new Array(SM.config.SLOT_COUNT).fill('');
+      cells[slot] = text;
+      return { name: name, cells: cells };
+    };
+    const teachers = [];
+    for (let i = 0; i < 7; i++) teachers.push(mk('Тест' + (i + 1) + ' Т.Т.', 0, (300 + i) + ' (1-8)'));
+    teachers.push(mk('Петрова П.П.', 0, 'ПО-2 (1-8)'));
+    teachers.push(mk('Орлова О.О.', 0, 'ПО-2-ДО (1-8)'));
+    SM.ui.state.model = SM.model.createModel({ title: 'test', teachers: teachers, warnings: [] }, {});
+    SM.ui.state.week = 1;
+    SM.ui.state.tab = 'calendar';
+    SM.ui.renderAll();
+    const boxes = [...document.querySelectorAll('#weekGrid .cellbox')];
+    const online = boxes.find(b => b.textContent.indexOf('ПО-2-ДО') >= 0);
+    const offline = boxes.find(b => /ПО-2\b(?!-ДО)/.test(b.textContent));
+    return {
+      boxes: boxes.length,
+      onlineText: online ? online.textContent.replace(/\s+/g, ' ').trim() : '(missing)',
+      onlineSelects: online ? online.querySelectorAll('select').length : -1,
+      offlineSelects: offline ? offline.querySelectorAll('select').length : -1
+    };
+  });
+  console.log('  lesson boxes:', uiInfo.boxes);
+  console.log('  online cell :', uiInfo.onlineText, '| room selectors:', uiInfo.onlineSelects);
+  console.log('  in-person   : room selectors:', uiInfo.offlineSelects);
+  if (uiInfo.onlineSelects !== 0) throw new Error('online lesson still shows a room selector');
+  if (uiInfo.offlineSelects !== 1) throw new Error('in-person lesson lost its room selector');
+
   console.log('\n=== ERRORS (' + errors.length + ') ===');
   errors.forEach(e => console.log('  ' + e));
   const warns = logs.filter(l => l.startsWith('warning'));

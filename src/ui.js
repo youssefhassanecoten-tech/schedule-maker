@@ -537,6 +537,11 @@
       el('div', { class: 'g', text: o.group }),
       el('div', { class: 't', text: '#' + o.topic })
     ]);
+    /* A distance lesson has no auditorium to choose. */
+    if (o.online) {
+      box.appendChild(el('div', { class: 't', text: t('online') }));
+      return box;
+    }
     box.appendChild(roomSelect(o));
     return box;
   }
@@ -613,26 +618,34 @@
         if (!sub.length) return;
         var blk = C.BLOCK_BY_KEY[b];
         var used = {};
-        sub.forEach(function (o) { if (!o.overflow) used[o.room] = (used[o.room] || 0) + 1; });
+        var offline = sub.filter(function (o) { return !o.online; });
+        offline.forEach(function (o) { if (!o.overflow) used[o.room] = (used[o.room] || 0) + 1; });
         var row = el('div', { class: 'blockrow' }, [
           el('span', { class: 'btime', text: state.lang === 'en' ? blk.labelEn : blk.labelRu }),
           el('span', {
             class: 'pill ' + (sub.some(function (o) { return o.overflow; }) ? 'is-warn' : 'is-accent'),
-            text: sub.length + ' / ' + state.rooms.length
+            /* Only in-person lessons consume a department room. */
+            text: offline.length + ' / ' + state.rooms.length
           }),
           el('span', { class: 'pill', text: Object.keys(used).sort().map(function (r) { return r + '×' + used[r]; }).join('  ') })
         ]);
         var chips = el('div', { class: 'lessonchips' });
         sub.forEach(function (o) {
-          var sel = el('select', { class: 'roomsel' });
-          sel.appendChild(el('option', { value: '', text: '· ' + t('auto') }));
-          state.rooms.forEach(function (r) { sel.appendChild(el('option', { value: r, text: r })); });
-          if (o.overflow) sel.appendChild(el('option', { value: C.OVERFLOW_ROOM_LABEL, text: C.OVERFLOW_ROOM_LABEL }));
-          sel.value = o.room || '';
-          sel.onchange = function () {
-            if (!sel.value) { o.locked = false; o.room = null; } else { o.locked = true; o.room = sel.value; }
-            recompute(state.week);
-          };
+          var controls;
+          if (o.online) {
+            controls = el('span', { class: 'pill', text: t('online') });
+          } else {
+            var sel = el('select', { class: 'roomsel' });
+            sel.appendChild(el('option', { value: '', text: '· ' + t('auto') }));
+            state.rooms.forEach(function (r) { sel.appendChild(el('option', { value: r, text: r })); });
+            if (o.overflow) sel.appendChild(el('option', { value: C.OVERFLOW_ROOM_LABEL, text: C.OVERFLOW_ROOM_LABEL }));
+            sel.value = o.room || '';
+            sel.onchange = function () {
+              if (!sel.value) { o.locked = false; o.room = null; } else { o.locked = true; o.room = sel.value; }
+              recompute(state.week);
+            };
+            controls = sel;
+          }
           chips.appendChild(el('span', {
             class: 'chip' + (o.overflow ? ' is-overflow' : ''),
             title: o.teacher + (o.notes && o.notes.length ? ' · ' + o.notes.join('; ') : '')
@@ -640,7 +653,7 @@
             el('span', { class: 'g', text: o.group }),
             el('span', { class: 'tp', text: '#' + o.topic }),
             el('span', { text: o.teacher.split(' ')[0] }),
-            sel,
+            controls,
             el('button', {
               class: 'btn btn-ghost btn-sm', type: 'button',
               title: t('delLesson'),
@@ -667,7 +680,8 @@
     if (!m) return;
     var byGroup = Object.create(null);
     m.occurrences.forEach(function (o) {
-      var g = byGroup[o.group] || (byGroup[o.group] = []);
+      var key = o.counterGroup || o.group;
+      var g = byGroup[key] || (byGroup[key] = []);
       g.push(o);
     });
     var rows = Object.keys(byGroup).map(function (g) {
@@ -1046,6 +1060,7 @@
           msgs.push(p.groups.length + ' ' + t('splitDetected') + (p.groups.length ? ': ' + p.groups.join(', ') : ''));
           if (p.unknown.length) { msgs.push(t('splitUnknown') + ': ' + p.unknown.join(', ')); isError = true; }
           if (p.duplicate.length) { msgs.push(t('splitDuplicate') + ': ' + p.duplicate.join(', ')); isError = true; }
+          if (p.excluded.length) msgs.push(t('splitPrepExcluded') + ': ' + p.excluded.join(', '));
         }
         issues.textContent = msgs.join(' · ');
         issues.className = 'issues' + (isError ? ' is-error' : '');

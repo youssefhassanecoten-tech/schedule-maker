@@ -42,17 +42,20 @@
       var usedNames = Object.create(null);
 
       if (plan.mainGroups.length) {
-        /* With splits configured the main monthly must NOT repeat the groups
-         * that were sent to a separate document; without splits this is the
-         * whole model, unchanged. */
-        var mainModel = plan.schedules.length
-          ? SM.model.monthlyView(model, plan.mainGroups)
-          : model;
-        monthNode.files.push({
-          name: SM.templateMonthly.fileName(m.year, m.month, model),
-          kind: 'monthly',
-          doc: function () { return SM.templateMonthly.build(mainModel, m.year, m.month, opts); }
-        });
+        /* The monthly never contains preparatory courses, and with splits
+         * configured it must not repeat the groups sent to a separate document
+         * either. Filtering keeps the same occurrences, so numbering and rooms
+         * stay identical to the weekly schedule. */
+        var mainModel = SM.model.monthlyView(model, plan.mainGroups);
+        var mainHasLessons = SM.templateMonthly.weeksOfMonth(mainModel, m.year, m.month)
+          .some(function (w) { return (mainModel.byWeek[w] || []).length > 0; });
+        if (mainHasLessons) {
+          monthNode.files.push({
+            name: SM.templateMonthly.fileName(m.year, m.month, model),
+            kind: 'monthly',
+            doc: function () { return SM.templateMonthly.build(mainModel, m.year, m.month, opts); }
+          });
+        }
       }
 
       plan.schedules.forEach(function (s) {

@@ -41,6 +41,14 @@ documents.
 * **7 rooms.** A block with more concurrent lessons than rooms produces overflow
   entries and feeds the Zayavka. Overflow is counted per `(date, block)`, not
   per day.
+* **`-ДО` marks a distance (online) lesson.** It gets **no room** and never
+  overflows, so it is excluded from the Zayavka's room count — but it still
+  appears in the weekly schedule. Online and in-person lessons of one group
+  share one "№ темы" counter.
+* **ПО groups are preparatory courses**, written `ПО-<n>` or `ПО-орд.<n>`; the
+  number after the name is the group, not a week. They appear in the weekly
+  schedule (and, when in person, in the Zayavka) but **never in the monthly
+  schedule**, so they are also not part of the monthly flow accounting.
 * **The Zayavka is never auto-filled with rooms.** Date and time only; pavilion
   and room stay blank by design. **One row per extra room** — a block that needs
   three more rooms produces three rows, not one.

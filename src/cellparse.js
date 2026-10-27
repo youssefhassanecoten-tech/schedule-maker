@@ -12,8 +12,13 @@
   'use strict';
   var SM = global.SM || (global.SM = {});
 
-  /* A group code: 3-4 digits plus an optional Cyrillic letter. */
-  var RE_GROUP_TOK = /(\d{3,4})\s*([А-Яа-яA-Z]?)\s*\.?/y;
+  /*
+   * A group token: a regular group ("269", "263А") or a preparatory-course one
+   * ("ПО-2", "ПО-орд.2"), optionally marked -ДО for a distance lesson. The
+   * trailing "(...)" is never part of the token, so a following week spec is
+   * left for the parser.
+   */
+  var RE_GROUP_TOK = /(\d{3,4}\s*[А-Яа-яA-Z]?\.?(?:\s*-\s*ДО)?|ПО\s*(?:-\s*орд)?\.?\s*-?\s*\d{1,3}(?:\s*-\s*ДО)?)/iy;
   var RE_PAREN = /\(([^()]*)\)/y;
 
   /*
