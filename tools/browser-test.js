@@ -202,7 +202,8 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
     teachers.push(mk('Петрова П.П.', 0, 'ПО-2 (1-8)'));
     teachers.push(mk('Орлова О.О.', 0, 'ПО-2-ДО (1-8)'));
     SM.ui.state.model = SM.model.createModel({ title: 'test', teachers: teachers, warnings: [] }, {});
-    SM.ui.state.week = 1;
+    /* ПО week 1 is main week 10 (02.11), not week 1. */
+    SM.ui.state.week = 10;
     SM.ui.state.tab = 'calendar';
     SM.ui.renderAll();
     const boxes = [...document.querySelectorAll('#weekGrid .cellbox')];

@@ -114,7 +114,7 @@
       ['lang', 'theme', 'docLang', 'pageSize', 'highlight', 'rootFolder', 'weekFolderPrefix', 'autoOpen', 'saveAs'].forEach(function (k) {
         if (s[k] !== undefined && s[k] !== null) state[k] = s[k];
       });
-      if (s.semester) state.semester = s.semester;
+      if (s.semester) state.semester = Object.assign({}, C.semester, s.semester);
       if (Array.isArray(s.rooms) && s.rooms.length) state.rooms = s.rooms;
       if (s.files) state.files = Object.assign(state.files, s.files);
       if (Array.isArray(s.monthlySplits)) {
@@ -974,6 +974,7 @@
   function renderSettings() {
     $('#semStart').value = state.semester.firstMonday;
     $('#semWeeks').value = state.semester.weeks;
+    $('#prepStart').value = state.semester.prepFirstMonday || '';
     $('#roomsList').value = state.rooms.join(', ');
     $('#rootFolder').value = state.rootFolder;
     $('#patWeekly').value = state.files.weekly;
@@ -1141,6 +1142,8 @@
     $('#generateBtn').textContent = t('generate');
     $('#lblSemStart').textContent = t('semesterStart');
     $('#lblSemWeeks').textContent = t('semesterWeeks');
+    $('#lblPrepStart').textContent = t('prepStart');
+    $('#prepHint').textContent = t('prepHint');
     $('#lblRooms').textContent = t('rooms');
     $('#roomsHint').textContent = t('roomsHint');
     $('#lblRoot').textContent = t('rootFolder');
@@ -1412,6 +1415,7 @@
       var rooms = $('#roomsList').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
       state.semester.firstMonday = start;
       state.semester.weeks = isNaN(weeks) ? state.semester.weeks : weeks;
+      state.semester.prepFirstMonday = $('#prepStart').value || state.semester.prepFirstMonday;
       state.rooms = rooms.length ? rooms : C.ROOMS.slice();
       state.files.weekly = $('#patWeekly').value || state.files.weekly;
       state.files.monthly = $('#patMonthly').value || state.files.monthly;

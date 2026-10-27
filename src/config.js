@@ -147,6 +147,11 @@
      * such as "(07.10-10.02)", so 24 weeks is the minimum that loses nothing. */
     semester: {
       firstMonday: '2026-08-31',
+      /* Preparatory courses (ПО) run their own week numbering: their week 1
+       * starts on 2026-11-02, while the rest of the department starts on
+       * 2026-08-31. "(1-8)" on a ПО group therefore means November-December,
+       * not September-October. Editable in Settings. */
+      prepFirstMonday: '2026-11-02',
       weeks: 24,
       yearLabelRu: '2026/27',
       yearLabelEn: '2026/27',

@@ -75,7 +75,9 @@
                         '" fall outside the semester and were skipped');
         }
 
-        var dates = SM.spec.expand(spec, slot.day, sem);
+        /* Preparatory courses count their weeks from their own start date. */
+        var anchor = SM.util.isPrep(e.group) ? (sem.prepFirstMonday || sem.firstMonday) : null;
+        var dates = SM.spec.expand(spec, slot.day, sem, anchor);
         if (!dates.length) {
           warnings.push(row.name + ' / group ' + e.group + ': specification "(' +
                         (e.specText || '') + ')" produced no dates');

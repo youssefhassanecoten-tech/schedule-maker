@@ -139,11 +139,16 @@
    * Week based specifications simply shift the Monday of each week.
    * Date ranges such as "(03.10-06.02)" repeat the slot's weekday, which in
    * JavaScript's numbering is (slotDow + 1) % 7.
+   *
+   * `weekAnchor` shifts ONLY the week numbering, not the semester span. That is
+   * how preparatory courses get their own week 1 (2026-11-02) while still being
+   * clipped to the department's term.
    */
-  function expand(spec, slotDow, sem) {
+  function expand(spec, slotDow, sem, weekAnchor) {
     if (!spec) return [];
     var spanStart = sem.firstMonday;
     var spanEnd = U.addDays(sem.firstMonday, sem.weeks * 7 - 1);
+    var anchor = weekAnchor || sem.firstMonday;
     var out = [];
     var i;
 
@@ -151,7 +156,7 @@
       for (i = 0; i < spec.weeks.length; i++) {
         var w = spec.weeks[i];
         if (w < 1 || w > sem.weeks) continue;
-        var monday = U.mondayOfWeek(w, sem.firstMonday);
+        var monday = U.mondayOfWeek(w, anchor);
         var iso = U.addDays(monday, slotDow);
         if (iso >= spanStart && iso <= spanEnd) out.push(iso);
       }

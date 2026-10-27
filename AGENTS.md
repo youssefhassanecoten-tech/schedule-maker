@@ -49,6 +49,10 @@ documents.
   number after the name is the group, not a week. They appear in the weekly
   schedule (and, when in person, in the Zayavka) but **never in the monthly
   schedule**, so they are also not part of the monthly flow accounting.
+  Their **week numbers count from their own week 1** (`semester.prepFirstMonday`,
+  default `2026-11-02`), not from the department's `2026-08-31`; `(1-8)` on a ПО
+  group is therefore November–December, while `(1-8)` on a normal group is
+  September–October.
 * **The Zayavka is never auto-filled with rooms.** Date and time only; pavilion
   and room stay blank by design. **One row per extra room** — a block that needs
   three more rooms produces three rows, not one.

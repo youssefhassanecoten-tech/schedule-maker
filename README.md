@@ -79,6 +79,8 @@ schedule generated/
   `№ аудитории` stay blank on purpose, the department completes them by hand.
 * Preparatory courses (`ПО-2`, `ПО-орд.2`) appear in the **weekly** schedule and
   in the Zayavka when taught in person, but never in the **monthly** schedule.
+  Their week numbers count from their own start date (Settings → "Начало занятий
+  ПО", default 02.11.2026), so `(1-8)` means November–December, not September.
 * A lesson marked `-ДО` (distance) stays in the weekly schedule with `Nн-ДО`
   instead of a room; it is excluded from the Zayavka and never counts as
   overflow.
