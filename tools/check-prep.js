@@ -100,7 +100,7 @@ async function docText(doc) {
     return hit || acc;
   }, '');
   const onlineLines = onlineCell.split('\n');
-  check(onlineLines[1] === '1н', 'online room line is "' + onlineLines[1] + '", want "1н" (no room, no dash)');
+  check(onlineLines[1] === '1н-ДО', 'online room line is "' + onlineLines[1] + '", want "1н-ДО"');
 
   // ---- 4. monthly excludes every ПО group ------------------------------
   const manifest = SM.package.manifest(model, { lang: 'ru' });

@@ -79,8 +79,9 @@ schedule generated/
   `№ аудитории` stay blank on purpose, the department completes them by hand.
 * Preparatory courses (`ПО-2`, `ПО-орд.2`) appear in the **weekly** schedule and
   in the Zayavka when taught in person, but never in the **monthly** schedule.
-* A lesson marked `-ДО` (distance) stays in the weekly schedule with **no room**;
-  it is excluded from the Zayavka and never counts as overflow.
+* A lesson marked `-ДО` (distance) stays in the weekly schedule with `Nн-ДО`
+  instead of a room; it is excluded from the Zayavka and never counts as
+  overflow.
 
 ### Two different week-to-month rules
 
