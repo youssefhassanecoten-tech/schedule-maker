@@ -1392,7 +1392,9 @@
 
     // service worker, only meaningful over http(s)
     if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
-      navigator.serviceWorker.register('sw.js').catch(function () { /* file:// or offline */ });
+      navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+        .then(function (reg) { return reg.update(); })
+        .catch(function () { /* file:// or offline */ });
     }
   }
 

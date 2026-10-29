@@ -3,7 +3,7 @@
  * Network-first so a code update is picked up immediately, cache as the offline
  * fallback. Bump CACHE when the shipped files change.
  */
-var CACHE = 'schedule-maker-v5';
+var CACHE = 'schedule-maker-v6';
 
 var ASSETS = [
   './',
@@ -62,7 +62,10 @@ self.addEventListener('fetch', function (e) {
   if (url.origin !== location.origin) return;
 
   e.respondWith(
-    fetch(req).then(function (res) {
+    /* no-cache = revalidate with the server (cheap 304s on GitHub Pages) so a
+     * new deployment is picked up on the next load instead of waiting for the
+     * browser's HTTP cache to expire. The cache below is the offline fallback. */
+    fetch(req, { cache: 'no-cache' }).then(function (res) {
       if (res && res.ok) {
         var copy = res.clone();
         caches.open(CACHE).then(function (c) { c.put(req, copy); });
