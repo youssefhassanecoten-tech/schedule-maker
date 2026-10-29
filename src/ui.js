@@ -1086,7 +1086,8 @@
 
     var about = $('#aboutList');
     about.innerHTML = '';
-    [['Source', state.fileName || '—'],
+    [['Version', 'v' + C.VERSION],
+     ['Source', state.fileName || '—'],
      ['Teachers', m ? m.teachers.length : 0],
      ['Weeks', m ? m.semester.weeks : 0],
      ['Lessons', m ? m.stats.lessons : 0],
@@ -1266,6 +1267,8 @@
     $('#footerPrivacy').textContent = t('privacyPolicy');
     $('#footerTerms').textContent = t('termsOfUse');
     $('#footerRights').textContent = t('footerRights');
+    $('#footerVersion').textContent = 'v' + C.VERSION;
+    $('#footerVersion').title = 'Schedule Maker v' + C.VERSION;
     $$('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
     var ib = $('#installBtn');
     if (ib) ib.textContent = t('install');

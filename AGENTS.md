@@ -79,6 +79,9 @@ documents.
 
 * `src/config.js` holds all magic values: rooms, time blocks, semester dates,
   fixed/preferred rooms, and the literal text of the Zayavka form.
+* The running version is `SM.config.VERSION` (shown in the footer and in
+  Settings → About). Keep it in sync with `version` in `package.json`; bump the
+  service-worker `CACHE` in `sw.js` whenever shipped assets change.
 * Every user-facing string lives in `src/i18n.js` in **both** `ru` and `en`.
   Never hard-code UI text in `ui.js`.
 * Templates are pure: `build(model, …)` returns a `Doc` and never touches the

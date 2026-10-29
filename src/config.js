@@ -121,7 +121,12 @@
    * 2_Oktyabr_2026_G__1.doc sets all of them to w:sz=10 (5pt), unbolded. */
   var MONTHLY_FONT_SZ = 10;
 
+  /* Shown in the footer and in Settings -> About so it is obvious which build is
+   * running. Keep in sync with "version" in package.json. */
+  var VERSION = '1.0.0';
+
   SM.config = {
+    VERSION: VERSION,
     DAYS_RU: DAYS_RU,
     DAYS_EN: DAYS_EN,
     BLOCKS: BLOCKS,

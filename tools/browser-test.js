@@ -289,7 +289,9 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
     privacy: document.querySelector('#footerPrivacy').getAttribute('href'),
     terms: document.querySelector('#footerTerms').getAttribute('href'),
     consent: document.querySelector('#footerConsent').textContent.trim(),
-    rights: document.querySelector('#footerRights').textContent.trim()
+    rights: document.querySelector('#footerRights').textContent.trim(),
+    version: document.querySelector('#footerVersion').textContent.trim(),
+    configVersion: 'v' + SM.config.VERSION
   }));
   console.log('  footer:', JSON.stringify(legal));
   if (legal.privacy !== 'privacy.html' || legal.terms !== 'terms.html') {
@@ -297,6 +299,9 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   }
   if (!/соглашаетесь|agree/i.test(legal.consent)) throw new Error('the footer consent line is missing');
   if (!/Youssef Hassan/.test(legal.rights)) throw new Error('the footer rights line is missing');
+  if (!/^v\d+\.\d+\.\d+$/.test(legal.version) || legal.version !== legal.configVersion) {
+    throw new Error('the footer version is missing or does not match config.VERSION');
+  }
 
   /* The English UI must point at the English legal pages. */
   await page.click('.lang-switch [data-lang="en"]');

@@ -805,6 +805,18 @@ table.data tbody tr:hover { background: var(--surface-2); }
 }
 .footer-links a:hover { text-decoration: underline; }
 .footer-rights { margin-top: 7px; font-size: 11px; }
+.footer-version {
+  display: inline-block;
+  margin-top: 9px;
+  padding: 2px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-soft);
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .04em;
+}
 
 /* ---------------------------------------------------------------- legal */
 .legal-page {
