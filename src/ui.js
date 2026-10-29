@@ -1258,6 +1258,11 @@
     $('#dlWeekBtn').textContent = t('dlWeek');
     $('#footerText').textContent = t('footer');
     $('#footerConsent').textContent = t('footerConsent');
+    /* The legal pages exist per language: RU reads privacy.html / terms.html,
+     * EN reads the .en variants. */
+    var legalSuffix = state.lang === 'en' ? '.en' : '';
+    $('#footerPrivacy').setAttribute('href', 'privacy' + legalSuffix + '.html');
+    $('#footerTerms').setAttribute('href', 'terms' + legalSuffix + '.html');
     $('#footerPrivacy').textContent = t('privacyPolicy');
     $('#footerTerms').textContent = t('termsOfUse');
     $('#footerRights').textContent = t('footerRights');

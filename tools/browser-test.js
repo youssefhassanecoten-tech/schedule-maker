@@ -293,18 +293,36 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   }));
   console.log('  footer:', JSON.stringify(legal));
   if (legal.privacy !== 'privacy.html' || legal.terms !== 'terms.html') {
-    throw new Error('the footer legal links are wrong');
+    throw new Error('the footer legal links are wrong in Russian');
   }
   if (!/соглашаетесь|agree/i.test(legal.consent)) throw new Error('the footer consent line is missing');
   if (!/Youssef Hassan/.test(legal.rights)) throw new Error('the footer rights line is missing');
 
-  for (const [file, needle] of [['privacy.html', 'Политика конфиденциальности'], ['terms.html', 'Условия использования']]) {
+  /* The English UI must point at the English legal pages. */
+  await page.click('.lang-switch [data-lang="en"]');
+  await page.waitForTimeout(450);
+  const legalEn = await page.evaluate(() => ({
+    privacy: document.querySelector('#footerPrivacy').getAttribute('href'),
+    terms: document.querySelector('#footerTerms').getAttribute('href')
+  }));
+  console.log('  footer EN:', JSON.stringify(legalEn));
+  if (legalEn.privacy !== 'privacy.en.html' || legalEn.terms !== 'terms.en.html') {
+    throw new Error('the English footer links do not point at the English pages');
+  }
+
+  for (const [file, needle] of [
+    ['privacy.html', 'Политика конфиденциальности'],
+    ['terms.html', 'Условия использования'],
+    ['privacy.en.html', 'Privacy Policy'],
+    ['terms.en.html', 'Terms of Use']
+  ]) {
     await page.goto('file:///' + path.join(ROOT, file).replace(/\\/g, '/'));
     const h1 = (await page.textContent('h1') || '').trim();
+    const other = file.endsWith('.en.html') ? ['Политика конфиденциальности', 'Условия использования'] : ['Privacy Policy', 'Terms of Use'];
     const body = (await page.textContent('body') || '');
-    console.log('  ' + file + ':', h1, '| acceptance text:', /соглашаетесь|agree/i.test(body));
+    console.log('  ' + file + ':', h1, '| leaks other language:', other.some(x => body.includes(x)));
     if (!h1.includes(needle)) throw new Error(file + ' heading is missing');
-    if (!/соглашаетесь|agree/i.test(body)) throw new Error(file + ' has no acceptance text');
+    if (other.some(x => body.includes(x))) throw new Error(file + ' still contains the other language');
   }
 
   console.log('\n=== ERRORS (' + errors.length + ') ===');
