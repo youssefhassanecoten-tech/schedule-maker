@@ -27,6 +27,8 @@ function cellsOf(rowXml) {
 
 (async () => {
   const MONTH = 9; // October, months are 0-indexed
+  const G = SM.templateMonthly.GRID;
+  const DAYS = 6;
   const grid = await SM.docxRead.readDocx(fs.readFileSync(P.resolve('Raspisanie_versia_6.docx')));
   const model = SM.model.createModel(grid, {});
   const doc = SM.templateMonthly.build(model, 2026, MONTH, { lang: 'ru' });
@@ -42,13 +44,13 @@ function cellsOf(rowXml) {
   rowsXml.forEach(r => {
     const cells = cellsOf(r);
     if (cells.length < 3) return;
-    if (/^Номер недели/.test(cells[0])) return;
-    if (cells.length === 8 && cells.slice(2).length === 6 &&
-        cells.slice(2).every(c => /^\d\d\.\d\d\.?$/.test(c))) { curWeek = ''; lastTime = ''; return; }
-    if (/неделя/.test(cells[0])) { curWeek = cells[0]; lastTime = ''; }
-    if (cells.slice(2).some(c => /^№ гр\.$/.test(c))) return;
+    if (/^Номер недели/.test(cells[G.weekIdx])) return;
+    if (cells.length === G.headerCells &&
+        cells.filter(c => /^\d\d\.\d\d\.?$/.test(c)).length === DAYS) { curWeek = ''; lastTime = ''; return; }
+    if (/неделя/.test(cells[G.weekIdx])) { curWeek = cells[G.weekIdx]; lastTime = ''; }
+    if (cells.indexOf('№ гр.') >= 0) return;
 
-    const tm = cells[1];
+    const tm = cells[G.timeIdx];
     if (tm && /^\d{1,2}[.:]\d\d/.test(tm)) {
       lastTime = tm;
       band = { week: curWeek, time: tm, rows: [] };
@@ -57,8 +59,9 @@ function cellsOf(rowXml) {
     }
     if (!band) return;
     const perDay = {};
-    for (let d = 0; d < 6; d++) {
-      const g = cells[2 + d * 4] || '', tp = cells[5 + d * 4] || '';
+    for (let d = 0; d < DAYS; d++) {
+      const base = G.dayBase + d * G.dayStride + G.groupOffset;
+      const g = cells[base] || '', tp = cells[base + 3] || '';
       if (g || tp) perDay[d] = { group: g, topic: tp };
     }
     if (Object.keys(perDay).length) band.rows.push({ idx: rowInBand, perDay });

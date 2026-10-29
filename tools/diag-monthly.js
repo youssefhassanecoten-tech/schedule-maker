@@ -33,19 +33,22 @@ const wkNo = s => (String(s).match(/^(\d+)/) || [, ''])[1];
       .map(s => s.replace(/<[^>]+>/g, '')).join('').trim());
     shapes[cells.length] = (shapes[cells.length] || 0) + 1;
     if (cells.length < 3) return;
-    const wk = cells[0], tm = cells[1];
+    const G = SM.templateMonthly.GRID;
+    const wk = cells[G.weekIdx], tm = cells[G.timeIdx];
     if (/^Номер недели/.test(wk)) return;
-    if (cells.length === 8 && cells.slice(2).length === 6 &&
-        cells.slice(2).every(c => /^\d\d\.\d\d\.?$/.test(c))) { curWeek = ''; lastTime = ''; return; }
+    if (cells.length === G.headerCells && cells.filter(c => /^\d\d\.\d\d\.?$/.test(c)).length === 6) {
+      curWeek = ''; lastTime = ''; return;
+    }
     if (/неделя/.test(wk)) { curWeek = wk; lastTime = ''; }
     // The sub-header row is all titles; it is not lesson data.
-    if (cells.slice(2).some(c => /^№ гр\.$/.test(c))) return;
+    if (cells.indexOf('№ гр.') >= 0) return;
     // The time cell is merged across a whole row group, so only its first row
     // carries the label. Carry it forward, the way a reader of the table does.
     if (tm && /^\d{1,2}[.:]\d\d/.test(tm)) lastTime = tm;
     const effTime = tm || lastTime;
     for (let d = 0; d < 6; d++) {
-      const g = cells[2 + d * 4] || '', t = cells[3 + d * 4] || '', tp = cells[5 + d * 4] || '';
+      const base = G.dayBase + d * G.dayStride + G.groupOffset;
+      const g = cells[base] || '', t = cells[base + 1] || '', tp = cells[base + 3] || '';
       if (g || t) my.push({ week: curWeek, day: d, time: effTime, group: g, teacher: t, topic: tp, row: ri });
     }
   });

@@ -46,20 +46,23 @@ function readGenerated() {
     const cells = tcs.map(tc => (tc.match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [])
       .map(s => s.replace(/<[^>]+>/g, '')).join('').trim());
     if (cells.length < 3) return;
-    const wk = cells[0], tm = cells[1];
+    const G = SM.templateMonthly.GRID;
+    const wk = cells[G.weekIdx], tm = cells[G.timeIdx];
     if (/^Номер недели/.test(wk)) return;
-    if (cells.length === 8 && cells.slice(2).length === 6 &&
-        cells.slice(2).every(c => /^\d\d\.\d\d\.?$/.test(c))) { curWeek = ''; lastTime = ''; return; }
+    if (cells.length === G.headerCells && cells.filter(c => /^\d\d\.\d\d\.?$/.test(c)).length === 6) {
+      curWeek = ''; lastTime = ''; return;
+    }
     if (/неделя/.test(wk)) { curWeek = wk; lastTime = ''; }
     // sub-header row: all six day groups repeat the same four titles
-    if (cells.slice(2).some(c => /^№ гр\.$/.test(c))) return;
+    if (cells.indexOf('№ гр.') >= 0) return;
     // The time label is merged down its whole row group, so only the first row
     // of each group carries it. Carry it forward like a reader would.
     if (tm && /^\d{1,2}[.:]\d\d/.test(tm)) { myLabels.push(tm); lastTime = tm; }
     const effTime = tm || lastTime;
     for (let d = 0; d < 6; d++) {
-      const g = cells[2 + d * 4] || '', t = cells[3 + d * 4] || '',
-            rm = cells[4 + d * 4] || '', tp = cells[5 + d * 4] || '';
+      const base = G.dayBase + d * G.dayStride + G.groupOffset;
+      const g = cells[base] || '', t = cells[base + 1] || '',
+            rm = cells[base + 2] || '', tp = cells[base + 3] || '';
       if (g || t) myLessons.push({ week: curWeek, day: d, time: effTime, group: g, teacher: t, room: rm, topic: tp });
     }
   });

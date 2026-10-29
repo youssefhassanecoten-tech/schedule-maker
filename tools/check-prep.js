@@ -134,11 +134,12 @@ function datesOf(model, group) {
     const monthly = y2026.children[folder].files.filter(f => f.kind === 'monthly');
     check(monthly.length === 1, 'expected one main monthly in ' + folder);
     const rows = await docRows(await monthly[0].doc());
+    const G = SM.templateMonthly.GRID;
     const groups = [];
     rows.forEach(cells2 => {
-      if (cells2.length !== 26) return;
+      if (cells2.length !== G.columns) return;
       for (let d = 0; d < 6; d++) {
-        const g = (cells2[2 + d * 4] || '').trim();
+        const g = (cells2[G.dayBase + d * G.dayStride + G.groupOffset] || '').trim();
         if (g) groups.push(g);
       }
     });

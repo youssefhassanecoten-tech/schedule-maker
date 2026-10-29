@@ -81,6 +81,10 @@ schedule generated/
   in the Zayavka when taught in person, but never in the **monthly** schedule.
   Their week numbers count from their own start date (Settings → "Начало занятий
   ПО", default 02.11.2026), so `(1-8)` means November–December, not September.
+* The monthly form keeps the department's diagonal hatch bands: narrow separator
+  columns around the table and between the day groups, shaded with a Word
+  pattern (`ltUpDiag`). Only the monthly is decorated — the weekly schedule and
+  the Zayavka stay plain.
 * A lesson marked `-ДО` (distance) stays in the weekly schedule with `Nн-ДО`
   instead of a room; it is excluded from the Zayavka and never counts as
   overflow.

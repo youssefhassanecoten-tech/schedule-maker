@@ -206,6 +206,14 @@
     }
   };
 
+  /* Monthly table decoration: the department's form carries a diagonal hatch
+   * on the separator bands around and between the day groups. In Word that is a
+   * cell shading PATTERN (w:shd w:val=...), not a border, so it is emitted on
+   * narrow separator columns. Monthly only - the weekly schedule and the
+   * Zayavka stay plain. */
+  SM.config.MONTHLY_HATCH = { val: 'ltUpDiag', color: '808080', fill: 'FFFFFF' };
+  SM.config.MONTHLY_SEP_W = 180;
+
   SM.monthNameRu = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля',
                     'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   SM.monthNameRuGen = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля',

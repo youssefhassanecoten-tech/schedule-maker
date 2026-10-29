@@ -67,13 +67,14 @@ function actualLabels(doc) {
 
   // every <w:t> inside the second <w:tc> of each row
   const rowsXml = xml.match(/<w:tr>[\s\S]*?<\/w:tr>/g) || [];
+  const G = SM.templateMonthly.GRID;
   const got = [];
   rowsXml.forEach(r => {
     const tcs = r.match(/<w:tc>[\s\S]*?<\/w:tc>/g) || [];
     if (tcs.length < 3) return;
     const text = i => (tcs[i].match(/<w:t[^>]*>([^<]*)<\/w:t>/g) || [])
       .map(s => s.replace(/<[^>]+>/g, '')).join('').trim();
-    const week = text(0), time = text(1);
+    const week = text(G.weekIdx), time = text(G.timeIdx);
     if (/^Номер недели|^Week$|^Время$|^Time$/.test(week)) return;
     if (/^\d\d\.\d\d\.?$/.test(time)) return;
     if (time) got.push(time);

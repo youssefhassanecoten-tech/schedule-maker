@@ -207,7 +207,10 @@
           (cfg.width ? '<w:tcW w:w="' + cfg.width + '" w:type="dxa"/>' : '') +
           (cfg.gridSpan > 1 ? '<w:gridSpan w:val="' + cfg.gridSpan + '"/>' : '') +
           (cfg.vMerge ? '<w:vMerge w:val="' + cfg.vMerge + '"/>' : '') +
-          (cfg.fill ? '<w:shd w:val="clear" w:color="auto" w:fill="' + cfg.fill + '"/>' : '') +
+          (cfg.shade
+            ? '<w:shd w:val="' + cfg.shade.val + '" w:color="' + (cfg.shade.color || 'auto') +
+              '" w:fill="' + (cfg.shade.fill || 'auto') + '"/>'
+            : (cfg.fill ? '<w:shd w:val="clear" w:color="auto" w:fill="' + cfg.fill + '"/>' : '')) +
           '<w:vAlign w:val="center"/>' +
           '</w:tcPr>';
         var pPr = '<w:pPr>' +

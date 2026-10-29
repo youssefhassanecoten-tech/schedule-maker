@@ -41,6 +41,22 @@
    * that literally makes the output look like the department's file. */
   var SZ = SM.config.MONTHLY_FONT_SZ;
 
+  /* Hatch bands: narrow separator columns shaded with a diagonal pattern, as on
+   * the department's form. They surround the table and split the day groups.
+   * GRID describes the resulting column layout so readers do not hardcode it. */
+  var HATCH = SM.config.MONTHLY_HATCH;
+  var SEP_W = SM.config.MONTHLY_SEP_W;
+  var GRID = {
+    columns: 3 + DAYS * (SUB + 1) + 1,   // 34
+    weekIdx: 1,
+    timeIdx: 2,
+    dayBase: 3,                          // hatch before day 0
+    dayStride: SUB + 1,                  // hatch + 4 data columns
+    groupOffset: 1,                      // group cell is the first data column
+    headerCells: 3 + DAYS * 2 + 1,       // 16: rows that merge each day into one cell
+    sepWidth: SEP_W
+  };
+
   function title(year, month, lang) {
     if (lang === 'en') {
       return 'Class schedule of the Department of Russian as a Foreign Language, ' +
@@ -105,17 +121,20 @@
    * or A3 without a second set of magic numbers. */
   function columnWidths(usable) {
     var p = SM.config.MONTHLY_PROFILE;
-    var weekW = Math.round(usable * p.weekFrac);
-    var timeW = Math.round(usable * p.timeFrac);
-    var dayW = Math.floor((usable - weekW - timeW) / DAYS);
-    var cols = [weekW, timeW];
+    /* Reserve the hatch bands first so the data columns keep their proportions. */
+    var inner = usable - SEP_W * (DAYS + 2);   // left + one between each day + right
+    var weekW = Math.round(inner * p.weekFrac);
+    var timeW = Math.round(inner * p.timeFrac);
+    var dayW = Math.floor((inner - weekW - timeW) / DAYS);
+    var cols = [SEP_W, weekW, timeW];
     for (var d = 0; d < DAYS; d++) {
       var g = Math.round(dayW * p.daySubFrac[0]);
       var f = Math.round(dayW * p.daySubFrac[1]);
       var a = Math.round(dayW * p.daySubFrac[2]);
       var t = dayW - g - f - a; // absorb rounding drift in the last column
-      cols = cols.concat([g, f, a, t]);
+      cols.push(SEP_W, g, f, a, t);
     }
+    cols.push(SEP_W);
     return cols;
   }
 
@@ -133,12 +152,15 @@
     var weeks = weeksOfMonth(model, year, month);
     var sub = lang === 'en' ? SUB_HEADERS_EN : SUB_HEADERS_RU;
     var cols = columnWidths(pg.w - 2 * pg.margin);
-    var weekW = cols[0], timeW = cols[1];
+    var sepW = cols[0], weekW = cols[1], timeW = cols[2];
 
     var table = doc.table({ cols: cols });
 
+    function sep(row) { row.cell({ text: '', width: sepW, shade: HATCH }); }
+
     // Row A: week column + time column + day names
     var ra = table.row();
+    sep(ra);
     ra.cell({
       text: lang === 'en' ? 'Week' : 'Номер недели',
       width: weekW, align: 'center', size: SZ, vMerge: 'restart'
@@ -150,33 +172,41 @@
     for (var d1 = 0; d1 < DAYS; d1++) {
       // Reference spells the weekdays lower-case: "понедельник", not
       // "Понедельник".
+      sep(ra);
       ra.cell({
         text: (lang === 'en' ? SM.config.DAYS_EN[d1] : SM.config.DAYS_RU[d1]).toLowerCase(),
         gridSpan: SUB, align: 'center', size: SZ
       });
     }
+    sep(ra);
 
     // Row B: sub-headers
     var rb = table.row();
+    sep(rb);
     rb.cell({ text: '', width: weekW, vMerge: 'continue' });
     rb.cell({ text: '', width: timeW, vMerge: 'continue' });
     for (var d2 = 0; d2 < DAYS; d2++) {
+      sep(rb);
       for (var k = 0; k < SUB; k++) rb.cell({ text: sub[k], align: 'center', size: SZ });
     }
+    sep(rb);
 
     weeks.forEach(function (week) {
       // Row C: dates
       var mon = U.mondayOfWeek(week, model.semester.firstMonday);
       var sat = U.addDays(mon, 5);
       var rc = table.row();
+      sep(rc);
       rc.cell({ text: '', width: weekW, vMerge: 'continue' });
       rc.cell({ text: '', width: timeW, vMerge: 'continue' });
       for (var d3 = 0; d3 < DAYS; d3++) {
+        sep(rc);
         rc.cell({
           text: U.fmtRu(U.addDays(mon, d3), true),
           gridSpan: SUB, align: 'center', size: SZ
         });
       }
+      sep(rc);
 
       /* Reference wording, verbatim:
        *   "5 неделя" / "(с 28.09. по 03.10.)"   - two paragraphs, no space
@@ -202,6 +232,7 @@
           for (var r = 0; r < maxRows; r++) {
             var row = table.row();
             var startsWeek = (s === 0 && r === 0 && firstBlock);
+            sep(row);
             row.cell({
               text: startsWeek ? weekLabel : '',
               width: weekW, align: 'center', size: SZ,
@@ -225,6 +256,7 @@
               vMerge: startsSlot ? 'restart' : 'continue'
             });
             for (var d4 = 0; d4 < DAYS; d4++) {
+              sep(row);
               var o = days[d4][r];
               var hl = o && o.overflow && opts.highlightOverflow !== false ? 'FFFF00' : null;
               if (!o) {
@@ -236,6 +268,7 @@
               row.cell({ text: o.room || '', align: 'center', size: SZ, fill: hl });
               row.cell({ text: String(o.topic || ''), align: 'center', size: SZ, fill: hl });
             }
+            sep(row);
             if (s === 0 && r === 0) firstBlock = false;
           }
         }
@@ -246,7 +279,7 @@
   }
 
   SM.templateMonthly = {
-    build: build, title: title, fileName: fileName, weeksOfMonth: weeksOfMonth
+    build: build, title: title, fileName: fileName, weeksOfMonth: weeksOfMonth, GRID: GRID
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

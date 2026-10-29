@@ -44,22 +44,30 @@ function tableRows(xml) {
 
 /* Group cells of a monthly document -> [{group, teacher, room, topic, date}] */
 function monthlyLessons(xml) {
-  /* The first two rows are the header block: day names (8 cells) and the four
-   * sub-headers per day (26 cells). Only rows after them carry lessons. */
+  /* The first two rows are the header block. Rows that merge each day into one
+   * cell (day names, dates) have GRID.headerCells cells; lesson and sub-header
+   * rows have GRID.columns. Only the layout constants describe that shape, so a
+   * change in the separator bands cannot silently shift the columns here. */
+  const G = SM.templateMonthly.GRID;
   const rows = tableRows(xml).slice(2);
   const out = [];
   let dates = null;
   rows.forEach(cells => {
-    if (cells.length === 8) { dates = cells.slice(2); return; }
-    if (cells.length !== 26 || !dates) return;
+    if (cells.length === G.headerCells) {
+      const ds = cells.filter(c => /^\d\d\.\d\d\.?$/.test(c));
+      if (ds.length === 6) dates = ds;
+      return;
+    }
+    if (cells.length !== G.columns || !dates) return;
     for (let d = 0; d < 6; d++) {
-      const g = (cells[2 + d * 4] || '').trim();
+      const base = G.dayBase + d * G.dayStride + G.groupOffset;
+      const g = (cells[base] || '').trim();
       if (!g) continue;
       out.push({
         group: g,
-        teacher: (cells[3 + d * 4] || '').trim(),
-        room: (cells[4 + d * 4] || '').trim(),
-        topic: (cells[5 + d * 4] || '').trim(),
+        teacher: (cells[base + 1] || '').trim(),
+        room: (cells[base + 2] || '').trim(),
+        topic: (cells[base + 3] || '').trim(),
         date: (dates[d] || '').replace(/\./g, '')
       });
     }
