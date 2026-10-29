@@ -1,8 +1,8 @@
 # Security Policy
 
-Schedule Maker is a **static, client-side web app**. It has no backend, no
-accounts, no remote API and no telemetry: the schedule grid you upload is parsed
-and the documents are generated entirely in your browser.
+Schedule Maker is proprietary software. It is a **static, client-side web app**.
+It has no backend, no accounts, no remote API and no telemetry: the schedule grid
+you upload is parsed and the documents are generated entirely in your browser.
 
 ## Supported versions
 
@@ -34,7 +34,7 @@ mitigation within 30 days for confirmed issues.
 
 **Out of scope**
 
-- the department's source schedules and the documents themselves
+- the schedule files you process and the documents themselves
 - GitHub Pages hosting and the browser
 - social-engineering attempts to obtain a staff member's device or account
 
@@ -52,7 +52,7 @@ mitigation within 30 days for confirmed issues.
 Uploaded grids and generated documents can contain personal data (teacher names,
 group numbers, rooms). Because processing is local:
 
-- nothing is transmitted to the maintainers, GitHub or any third party;
+- nothing is transmitted to the copyright holder, GitHub or any third party;
 - data persists on the device in browser storage until it is cleared;
 - on a shared computer use a private browser profile and clear site data after
   use (Memory tab or browser settings);

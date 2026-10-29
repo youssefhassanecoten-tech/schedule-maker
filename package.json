@@ -1,7 +1,7 @@
 {
   "name": "schedule-maker",
   "version": "1.0.0",
-  "description": "Automatic schedule maker and editor for the Department of Russian as a Foreign Language. Reads Raspisanie_versia_N.docx and produces the weekly schedule, the monthly schedule and the auditorium request. Pure static web app, no build step.",
+  "description": "Schedule Maker: a static schedule maker and editor. Reads a schedule grid (Raspisanie_versia_N.docx) and produces the weekly schedule, the monthly schedule and the auditorium request. Pure static web app, no build step.",
   "private": true,
   "type": "commonjs",
   "scripts": {
@@ -28,7 +28,7 @@
     "shots": "node tools/shots.js"
   },
   "keywords": ["schedule", "docx", "timetable", "wordprocessingml"],
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "@xmldom/xmldom": "^0.8.10",
     "jszip": "^3.10.1"
