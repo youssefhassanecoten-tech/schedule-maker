@@ -713,6 +713,7 @@ table.data tbody tr:hover { background: var(--surface-2); }
   padding: 0 2px;
   line-height: 1;
 }
+.day-head { cursor: pointer; }
 .day-head.is-holiday { color: var(--danger); }
 .cellbox.is-holiday {
   border-color: var(--danger);

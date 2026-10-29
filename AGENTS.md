@@ -58,7 +58,8 @@ documents.
   the weekly/monthly documents print them **red** (`SM.config.HOLIDAY`) and the
   monthly date cell is red too. Numbering does **not** change — a holiday cancels
   a lesson, it does not renumber the group. Marked by double-clicking a day
-  header; the file upload is a disabled DEMO until its format is agreed.
+  header or any cell of that day; the file upload is a disabled DEMO until its
+  format is agreed.
 * **The Zayavka is never auto-filled with rooms.** Date and time only; pavilion
   and room stay blank by design. **One row per extra room** — a block that needs
   three more rooms produces three rows, not one.

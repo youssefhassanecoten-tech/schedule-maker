@@ -570,8 +570,17 @@
       var row = el('tr');
       row.appendChild(el('td', { class: 'teacher', text: teacher.name }));
       C.SLOTS.forEach(function (slot) {
-        var o = byTeacher[teacher.name] && byTeacher[teacher.name].filter(function (x) { return x.slot === slot.idx; })[0];
-        row.appendChild(el('td', { class: 'cell' }, [o ? lessonCell(o) : null]));
+        var list = (byTeacher[teacher.name] || []).filter(function (x) { return x.slot === slot.idx; });
+        var td = el('td', { class: 'cell' }, list.map(lessonCell));
+        /* Double-clicking anywhere in a day's column works too, not only the
+         * day header: the headers are easy to miss. Controls inside a lesson
+         * (room dropdown, delete button) keep their own behaviour. */
+        td.addEventListener('dblclick', function (ev) {
+          var target = ev.target;
+          if (target && target.closest && target.closest('select, button, input, a, option')) return;
+          toggleHoliday(U.addDays(mon, slot.day));
+        });
+        row.appendChild(td);
       });
       tbody.appendChild(row);
     });
@@ -1245,7 +1254,7 @@
     $('#unlockBtn').textContent = t('relockAll');
     $('#applySem').textContent = t('recalc');
     $('#resetSem').textContent = t('reset');
-    $('#liveNote').textContent = t('liveEditHint');
+    $('#liveNote').textContent = t('liveEditHint') + '   ·   ' + t('holidayHint');
     $('#dlWeekBtn').textContent = t('dlWeek');
     $('#footer').textContent = t('footer');
     $$('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });

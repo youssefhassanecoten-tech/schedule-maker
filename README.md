@@ -2,10 +2,9 @@
 
 An automatic schedule maker for organisations and institutions, specially those
 involved in educational programs like universities and academies.
-
-Concretely: a schedule maker and editor for the **Department of Russian as a
-Foreign Language**. Feed it the department's grid (`Raspisanie_versia_N.docx`)
-and it produces every downstream document the department has to file.
+Concretely: a schedule maker and editor for a department's schedule grid
+(`Raspisanie_versia_N.docx`). Feed it the grid and it produces every downstream
+document the department has to file.
 
 Runs entirely in the browser — the file is never uploaded anywhere.
 
@@ -87,8 +86,8 @@ schedule generated/
   the Zayavka stay plain.
 * Holidays are whole dates: they cancel that day's lessons (no room, no Zayavka
   entry) and print them red in the weekly and monthly documents. Mark them by
-  double-clicking a day header in the calendar. The holiday file upload is a
-  disabled DEMO until its format is agreed.
+  double-clicking a day header or any cell of that day in the calendar. The
+  holiday file upload is a disabled DEMO until its format is agreed.
 * A lesson marked `-ДО` (distance) stays in the weekly schedule with `Nн-ДО`
   instead of a room; it is excluded from the Zayavka and never counts as
   overflow.
@@ -311,11 +310,12 @@ reference is relative, so the same tree works at the `/schedule-maker/` subpath.
   reporting, data handling, dependency and deployment guidance.
 - [`ACCEPTABLE-USE-POLICY.md`](ACCEPTABLE-USE-POLICY.md) — who may use the
   deployment, what is prohibited (including commercial use by unauthorised
-  personnel), and how department data must be handled.
+  personnel), and how processed data must be handled.
 
 Short version: there is no backend and no telemetry. The uploaded grid and the
 generated documents stay in the browser, and the exported ZIP is an internal
-department document, not something to publish.
+document, not something to publish. Both documents are issued by the copyright
+holder and repository owner.
 
 ---
 

@@ -263,6 +263,26 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   console.log('  after second dblclick, holidays:', h2);
   if (h2 !== 0) throw new Error('double-click did not clear the holiday');
 
+  // double-clicking any cell of a day works as well as its header
+  const cell = await page.$('#weekGrid tbody tr:nth-child(1) td.cell:nth-child(2)');
+  await cell.dblclick();
+  await page.waitForTimeout(500);
+  const h3 = await page.evaluate(() => ({
+    n: SM.ui.state.holidays.length,
+    iso: SM.ui.state.holidays[0] || null,
+    hint: document.querySelector('#liveNote').textContent
+  }));
+  console.log('  cell dblclick   :', JSON.stringify(h3));
+  if (h3.n !== 1) throw new Error('double-clicking a day cell did not mark a holiday');
+  if (!/праздник/i.test(h3.hint)) throw new Error('the calendar hint does not explain the holiday double-click');
+  /* The grid is rebuilt after a toggle, so the old handle is detached: query again. */
+  const cell2 = await page.$('#weekGrid tbody tr:nth-child(1) td.cell:nth-child(2)');
+  await cell2.dblclick();
+  await page.waitForTimeout(400);
+  if ((await page.evaluate(() => SM.ui.state.holidays.length)) !== 0) {
+    throw new Error('double-clicking the cell again did not clear the holiday');
+  }
+
   console.log('\n=== ERRORS (' + errors.length + ') ===');
   errors.forEach(e => console.log('  ' + e));
   const warns = logs.filter(l => l.startsWith('warning'));
