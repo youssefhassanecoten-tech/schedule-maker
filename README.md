@@ -272,6 +272,8 @@ end time are preserved and flagged with `✎` so they can be confirmed by hand.
 
 ```
 index.html                 markup + script order (classic scripts, no bundler)
+SECURITY.md                security policy (local-only processing, reporting)
+ACCEPTABLE-USE-POLICY.md   who may use it, prohibited/commercial use, data rules
 manifest.webmanifest       PWA manifest (name, icons, standalone display)
 sw.js                      service worker, network-first with offline cache
 .nojekyll                  makes GitHub Pages serve the tree as-is
@@ -300,6 +302,20 @@ tools/                     Node test harnesses (not needed to run the app)
 The modules attach to a single global `SM` namespace and are plain scripts, which
 is what lets `index.html` work from `file://` without a server. Every asset
 reference is relative, so the same tree works at the `/schedule-maker/` subpath.
+
+---
+
+## Security and acceptable use
+
+- [`SECURITY.md`](SECURITY.md) — supported versions, private vulnerability
+  reporting, data handling, dependency and deployment guidance.
+- [`ACCEPTABLE-USE-POLICY.md`](ACCEPTABLE-USE-POLICY.md) — who may use the
+  deployment, what is prohibited (including commercial use by unauthorised
+  personnel), and how department data must be handled.
+
+Short version: there is no backend and no telemetry. The uploaded grid and the
+generated documents stay in the browser, and the exported ZIP is an internal
+department document, not something to publish.
 
 ---
 
