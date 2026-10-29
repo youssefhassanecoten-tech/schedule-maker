@@ -317,6 +317,11 @@ generated documents stay in the browser, and the exported ZIP is an internal
 document, not something to publish. Both documents are issued by the copyright
 holder and repository owner.
 
+The site footer links to the user-facing [`privacy.html`](privacy.html) and
+[`terms.html`](terms.html). They state that using the site constitutes acceptance
+of the Terms of Use and the Privacy Policy, and that all rights in the product
+remain with the copyright holder.
+
 ---
 
 ## Deploying

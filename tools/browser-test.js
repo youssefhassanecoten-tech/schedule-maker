@@ -283,6 +283,30 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
     throw new Error('double-clicking the cell again did not clear the holiday');
   }
 
+  // ---- footer legal links and the user-facing pages ----
+  console.log('\n=== LEGAL ===');
+  const legal = await page.evaluate(() => ({
+    privacy: document.querySelector('#footerPrivacy').getAttribute('href'),
+    terms: document.querySelector('#footerTerms').getAttribute('href'),
+    consent: document.querySelector('#footerConsent').textContent.trim(),
+    rights: document.querySelector('#footerRights').textContent.trim()
+  }));
+  console.log('  footer:', JSON.stringify(legal));
+  if (legal.privacy !== 'privacy.html' || legal.terms !== 'terms.html') {
+    throw new Error('the footer legal links are wrong');
+  }
+  if (!/соглашаетесь|agree/i.test(legal.consent)) throw new Error('the footer consent line is missing');
+  if (!/Youssef Hassan/.test(legal.rights)) throw new Error('the footer rights line is missing');
+
+  for (const [file, needle] of [['privacy.html', 'Политика конфиденциальности'], ['terms.html', 'Условия использования']]) {
+    await page.goto('file:///' + path.join(ROOT, file).replace(/\\/g, '/'));
+    const h1 = (await page.textContent('h1') || '').trim();
+    const body = (await page.textContent('body') || '');
+    console.log('  ' + file + ':', h1, '| acceptance text:', /соглашаетесь|agree/i.test(body));
+    if (!h1.includes(needle)) throw new Error(file + ' heading is missing');
+    if (!/соглашаетесь|agree/i.test(body)) throw new Error(file + ' has no acceptance text');
+  }
+
   console.log('\n=== ERRORS (' + errors.length + ') ===');
   errors.forEach(e => console.log('  ' + e));
   const warns = logs.filter(l => l.startsWith('warning'));

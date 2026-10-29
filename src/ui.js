@@ -1256,7 +1256,11 @@
     $('#resetSem').textContent = t('reset');
     $('#liveNote').textContent = t('liveEditHint') + '   ·   ' + t('holidayHint');
     $('#dlWeekBtn').textContent = t('dlWeek');
-    $('#footer').textContent = t('footer');
+    $('#footerText').textContent = t('footer');
+    $('#footerConsent').textContent = t('footerConsent');
+    $('#footerPrivacy').textContent = t('privacyPolicy');
+    $('#footerTerms').textContent = t('termsOfUse');
+    $('#footerRights').textContent = t('footerRights');
     $$('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
     var ib = $('#installBtn');
     if (ib) ib.textContent = t('install');
