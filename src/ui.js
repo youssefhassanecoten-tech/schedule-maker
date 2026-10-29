@@ -1062,14 +1062,7 @@
     $('#patMonthly').value = state.files.monthly;
     $('#patZayavka').value = state.files.zayavka;
 
-    var fixed = $('#fixedRooms');
-    fixed.innerHTML = '';
-    Object.keys(C.FIXED_ROOMS).forEach(function (name) {
-      fixed.appendChild(roomField(name, C.FIXED_ROOMS[name], function (v) {
-        if (v) C.FIXED_ROOMS[name] = v; else delete C.FIXED_ROOMS[name];
-        saveSettings();
-      }));
-    });
+    renderFixedRooms();
     var pref = $('#prefRooms');
     pref.innerHTML = '';
     Object.keys(C.TEACHER_ROOM_PREF).forEach(function (name) {
@@ -1097,6 +1090,81 @@
       about.appendChild(el('dt', { text: kv[0] }));
       about.appendChild(el('dd', { text: String(kv[1]) }));
     });
+  }
+
+  /* ------------------------------------------------ fixed classrooms UI
+   *
+   * The list is editable: any teacher in the loaded source file can be added
+   * (the row starts empty until a room is picked) and removed again. The mapping
+   * lives in C.FIXED_ROOMS and is saved with the other settings.
+   */
+  function renderFixedRooms() {
+    var host = $('#fixedRooms');
+    if (!host) return;
+    host.innerHTML = '';
+
+    Object.keys(C.FIXED_ROOMS).forEach(function (name) {
+      host.appendChild(fixedRow(name));
+    });
+
+    var field = el('div', { class: 'field fixed-add' }, [
+      el('label', { text: t('fixedAdd') })
+    ]);
+    var names = sourceTeachers().filter(function (n) {
+      return !Object.prototype.hasOwnProperty.call(C.FIXED_ROOMS, n);
+    });
+    var sel = el('select', { id: 'fixedAddSel' });
+    sel.appendChild(el('option', { value: '', text: '—' }));
+    names.forEach(function (n) { sel.appendChild(el('option', { value: n, text: n })); });
+    sel.disabled = !names.length;
+    sel.onchange = function () {
+      if (!sel.value) return;
+      C.FIXED_ROOMS[sel.value] = '';
+      saveSettings();
+      renderFixedRooms();
+    };
+    field.appendChild(sel);
+    if (!names.length) {
+      field.appendChild(el('span', { class: 'hint', text: t('fixedAllAdded') }));
+    }
+    host.appendChild(field);
+  }
+
+  function sourceTeachers() {
+    var list = (state.model && state.model.teachers) || [];
+    return list.map(function (t) { return t.name; });
+  }
+
+  function fixedRow(name) {
+    var sel = el('select', {});
+    sel.appendChild(el('option', { value: '', text: '—' }));
+    state.rooms.forEach(function (r) {
+      sel.appendChild(el('option', { value: r, text: r }));
+    });
+    if (C.FIXED_ROOMS[name] && state.rooms.indexOf(C.FIXED_ROOMS[name]) < 0) {
+      sel.appendChild(el('option', { value: C.FIXED_ROOMS[name], text: C.FIXED_ROOMS[name] }));
+    }
+    sel.value = C.FIXED_ROOMS[name] || '';
+    sel.onchange = function () {
+      if (sel.value) C.FIXED_ROOMS[name] = sel.value;
+      else delete C.FIXED_ROOMS[name];
+      saveSettings();
+      recompute(state.week);
+    };
+
+    return el('div', { class: 'fixed-row', 'data-teacher': name }, [
+      el('span', { class: 'fixed-name', text: name }),
+      sel,
+      el('button', {
+        class: 'btn btn-sm fixed-remove', type: 'button', text: '✕',
+        title: t('fixedRemove'),
+        onclick: function () {
+          delete C.FIXED_ROOMS[name];
+          saveSettings();
+          recompute(state.week);
+        }
+      })
+    ]);
   }
 
   function roomField(name, value, onChange) {

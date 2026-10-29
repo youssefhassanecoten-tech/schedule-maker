@@ -732,6 +732,26 @@ table.data tbody tr:hover { background: var(--surface-2); }
 .kv-list dt { color: var(--text-soft); }
 .kv-list dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 
+/* --- locked-room teacher list ------------------------------------------- */
+.fixed-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.fixed-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 132px auto;
+  gap: 8px;
+  align-items: center;
+}
+.fixed-name { font-size: 13px; }
+.fixed-row select { width: 100%; }
+.fixed-remove { padding: 5px 10px; }
+.fixed-add { max-width: 360px; margin-top: 6px; }
+@media (max-width: 620px) {
+  .fixed-row { grid-template-columns: 1fr 104px auto; }
+}
+
 .note-box {
   background: var(--accent-soft);
   border: 1px solid var(--accent);

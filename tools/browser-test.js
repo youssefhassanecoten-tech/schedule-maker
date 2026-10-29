@@ -123,6 +123,41 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.waitForTimeout(700);
   console.log('  after reset, week selector has', (await page.$$eval('#weekSel option', o => o.length)), 'options');
 
+  // ---- add / remove a teacher in the locked-room list ----
+  console.log('\n=== LOCKED ROOMS ===');
+  await clickTab('settings');
+  const beforeFixed = await page.$$eval('#fixedRooms .fixed-row', els => els.length);
+  const addedTeacher = await page.evaluate(() => {
+    const sel = document.querySelector('#fixedAddSel');
+    const opt = [...sel.options].find(o => o.value);
+    return opt ? opt.value : null;
+  });
+  console.log('  rows before:', beforeFixed, '| adding:', addedTeacher);
+  if (!addedTeacher) throw new Error('no teacher available to add');
+
+  await page.selectOption('#fixedAddSel', addedTeacher);
+  await page.waitForTimeout(300);
+  const afterAdd = await page.$$eval('#fixedRooms .fixed-row', els =>
+    els.map(e => e.getAttribute('data-teacher')));
+  if (afterAdd.length !== beforeFixed + 1 || afterAdd.indexOf(addedTeacher) < 0) {
+    throw new Error('adding a teacher did not add a row');
+  }
+
+  await page.selectOption(`#fixedRooms .fixed-row[data-teacher="${addedTeacher}"] select`, '34');
+  await page.waitForTimeout(500);
+  const fixedRoom = await page.evaluate(n => SM.config.FIXED_ROOMS[n], addedTeacher);
+  console.log('  locked room for', addedTeacher, '->', fixedRoom);
+  if (fixedRoom !== '34') throw new Error('the chosen locked room was not stored');
+
+  await page.click(`#fixedRooms .fixed-row[data-teacher="${addedTeacher}"] .fixed-remove`);
+  await page.waitForTimeout(500);
+  const afterRemove = await page.$$eval('#fixedRooms .fixed-row', els => els.length);
+  const stillMapped = await page.evaluate(n => n in SM.config.FIXED_ROOMS, addedTeacher);
+  console.log('  rows after remove:', afterRemove, '| still mapped:', stillMapped);
+  if (afterRemove !== beforeFixed || stillMapped) {
+    throw new Error('removing the teacher did not restore the list');
+  }
+
   // ---- separate monthly schedules ----
   console.log('\n=== MONTHLY SPLITS ===');
   await clickTab('settings');

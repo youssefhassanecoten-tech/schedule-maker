@@ -11,6 +11,10 @@
   SM.changelog = {
     entries: [
       { level: 'medium', date: '2026-10-29', commit: '',
+        ru: 'Закреплённые аудитории: преподавателей из файла можно добавлять в список и убирать из него.',
+        en: 'Locked rooms: teachers from the file can be added to the list and removed from it.' },
+
+      { level: 'medium', date: '2026-10-29', commit: '',
         ru: 'Страница «Что нового»: нажмите на номер версии в подвале, чтобы прочитать, что изменилось.',
         en: '“What’s new” page: click the version number in the footer to read what changed.' },
 
