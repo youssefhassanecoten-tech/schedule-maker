@@ -161,6 +161,7 @@
           renderAll();
           autosaveRun(file.name);
           toast(t('saved') + ': ' + file.name, 'ok');
+          if (SM.tour) setTimeout(function () { SM.tour.afterFileLoaded(); }, 250);
         })
         .catch(function (err) {
           console.error(err);
@@ -277,6 +278,7 @@
         $('#workSection').hidden = false;
         renderAll();
         toast(t('runOpened') + ': ' + run.fileName, 'ok');
+        if (SM.tour) setTimeout(function () { SM.tour.afterFileLoaded(); }, 250);
       })
       .catch(function (err) {
         console.error(err);
@@ -392,6 +394,7 @@
     TABS.forEach(function (tab) {
       var b = el('button', {
         class: 'tab', role: 'tab', type: 'button',
+        'data-tab': tab.id,
         'aria-selected': String(state.tab === tab.id),
         onclick: function () { state.tab = tab.id; renderAll(); }
       }, [document.createTextNode(t(tab.label))]);
@@ -1383,6 +1386,7 @@
     $('#roomsListHint').textContent = t('roomsHint');
     $('#lblRoomAdd').textContent = t('roomAdd');
     $('#lblRoot').textContent = t('rootFolder');
+    $('#tourBtn').textContent = t('showTutorial');
     $('#tSem').textContent = t('settings');
     $('#tFiles').textContent = t('filePatterns');
     $('#tFixed').textContent = t('fixedRooms');
@@ -1451,6 +1455,12 @@
     dz.appendChild(el('div', { class: 'dropzone-icon' }, [el('span', { class: 'spinner' })]));
     dz.appendChild(el('h2', { text: t('busy') }));
     dz.appendChild(el('p', { text: name }));
+  }
+
+  /* Used by the guided tour to move between panels. */
+  function openTab(id) {
+    state.tab = id;
+    renderAll();
   }
 
   function renderAll() {
@@ -1710,6 +1720,12 @@
       };
     }
 
+    if ($('#tourBtn')) {
+      $('#tourBtn').onclick = function () {
+        if (SM.tour) SM.tour.restartFull();
+      };
+    }
+
     window.addEventListener('keydown', function (e) {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       var idx = '123456789'.indexOf(e.key);
@@ -1725,6 +1741,9 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
   else init();
 
-  SM.ui = { state: state, renderAll: renderAll, toast: toast, downloadBlob: downloadBlob };
+  SM.ui = {
+    state: state, renderAll: renderAll, openTab: openTab,
+    toast: toast, downloadBlob: downloadBlob
+  };
 
 })(window);

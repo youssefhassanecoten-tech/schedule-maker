@@ -13,6 +13,10 @@
 
   SM.changelog = {
     entries: [
+      { level: 'major', date: '2026-10-29', commit: '', version: '6.13.7',
+        ru: 'Обучение: полный тур при первом запуске, короткие подсказки после обновления и кнопка повторного запуска.',
+        en: 'Tutorial: a full first-run tour, short update hints and a replay button.' },
+
       { level: 'medium', date: '2026-10-29', commit: '', version: '5.13.7',
         ru: 'Страница «Что нового»: раздел «Изменения этой версии», история по крупным версиям (до 7 назад) и кнопка PDF (пока недоступна).',
         en: 'What’s new page: a “Changes in this version” section, history grouped by major version (up to 7 back) and a PDF button (disabled for now).' },

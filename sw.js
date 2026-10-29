@@ -3,7 +3,7 @@
  * Network-first so a code update is picked up immediately, cache as the offline
  * fallback. Bump CACHE when the shipped files change.
  */
-var CACHE = 'schedule-maker-v14';
+var CACHE = 'schedule-maker-v15';
 
 var ASSETS = [
   './',
@@ -39,6 +39,8 @@ var ASSETS = [
   'src/memory.js',
   'src/changelog.js',
   'src/changelog-page.js',
+  'src/tours.js',
+  'src/tour.js',
   'src/package.js',
   'src/ui.js'
 ];

@@ -8,7 +8,7 @@ very beginning**:
 MAJOR . MEDIUM . MINOR   =   count of major / medium / minor changes
 ```
 
-Current version: **5.13.7** — 5 major, 13 medium and 7 minor changes.
+Current version: **6.13.7** — 6 major, 13 medium and 7 minor changes.
 
 A *major* change is a new capability that changes what the product is or how it
 is delivered. A *medium* change is a new feature or a visible capability added to
@@ -20,7 +20,7 @@ in sync with `version` in `package.json`.
 
 ---
 
-## Major changes (5)
+## Major changes (6)
 
 1. **Core generator** — read `Raspisanie_versia_N.docx` and produce the weekly
    schedule, the monthly schedule and the auditorium request, with lesson
@@ -35,6 +35,8 @@ in sync with `version` in `package.json`.
    `cca6623`)
 5. **Holidays** — a whole date overrides its lessons, prints them red and removes
    them from the auditorium request. (`6af9381`)
+
+6. **Tutorial: full first-run tour, update hints and a replay button.** (2026-10-29)
 
 ## Medium changes (13)
 

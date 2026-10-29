@@ -297,6 +297,8 @@ src/
   package.js               folder tree + ZIP
   changelog.js             bilingual change history for the what's-new page
   changelog-page.js        renders changelog.html / changelog.en.html
+  tours.js                 guided-tour steps (first run + per version)
+  tour.js                  spotlight/card tour engine
   i18n.js                  Russian / English strings
   ui.js                    interface
 tools/                     Node test harnesses (not needed to run the app)
@@ -358,6 +360,19 @@ version**, then the history grouped by major version (at most 7 major versions
 back), rendered from the bilingual `src/changelog.js` data
 (`src/changelog-page.js`). Every entry carries the release version it shipped in.
 A matted PDF button is in place for the future full-history export.
+
+### Guided tour
+
+After the first file is loaded, a full walkthrough highlights the main areas:
+file bar, summary, tabs, week calendar, rooms, counters, warnings, generated
+files, department rooms, locked rooms, holidays and the version footer. It is
+shown once; finishing or skipping is stored under `schedule-maker-tour-v1` in
+`localStorage`.
+
+When a release changes controls, `src/tours.js` can carry a short update tour
+under `updates[version]`; on the first load after that update only those steps
+are shown. **Show the tutorial again** in Settings → About replays the full
+tour, and `npm run check:tour` validates the data.
 
 ---
 

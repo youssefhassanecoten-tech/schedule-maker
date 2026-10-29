@@ -1,11 +1,11 @@
 {
   "name": "schedule-maker",
-  "version": "5.13.7",
+  "version": "6.13.7",
   "description": "Schedule Maker: a static schedule maker and editor. Reads a schedule grid (Raspisanie_versia_N.docx) and produces the weekly schedule, the monthly schedule and the auditorium request. Pure static web app, no build step.",
   "private": true,
   "type": "commonjs",
   "scripts": {
-    "test": "npm run validate && npm run verify && npm run compare && npm run check:subslots && npm run check:weekly && npm run check:splits && npm run check:prep && npm run check:hatch && npm run check:holidays && npm run check:changelog && npm run check:zayavka",
+    "test": "npm run validate && npm run verify && npm run compare && npm run check:subslots && npm run check:weekly && npm run check:splits && npm run check:prep && npm run check:hatch && npm run check:holidays && npm run check:changelog && npm run check:tour && npm run check:zayavka",
     "validate": "node tools/validate.js",
     "verify": "node tools/verify-docx.js",
     "compare": "node tools/compare-cells.js",
@@ -17,6 +17,7 @@
     "check:hatch": "node tools/check-monthly-hatch.js",
     "check:holidays": "node tools/check-holidays.js",
     "check:changelog": "node tools/check-changelog.js",
+    "check:tour": "node tools/check-tours.js",
     "check:zayavka": "node tools/check-zayavka.js",
     "version:bump": "node tools/bump-version.js",
     "check:dropped": "node tools/find-dropped.js",

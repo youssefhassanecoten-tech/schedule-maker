@@ -37,6 +37,31 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.waitForSelector('#workSection:not([hidden])', { timeout: 30000 });
   await page.waitForTimeout(400);
 
+  // ---- first-run guided tour ----
+  console.log('\n=== TOUR ===');
+  await page.waitForSelector('#tourRoot', { timeout: 8000 });
+  const tour1 = await page.evaluate(() => ({
+    title: (document.querySelector('.tour-title') || {}).textContent || '',
+    step: (document.querySelector('.tour-step') || {}).textContent || '',
+    spot: !!document.querySelector('.tour-spot'),
+    card: !!document.querySelector('.tour-card'),
+    arrow: getComputedStyle(document.querySelector('.tour-card'), '::after').borderWidth
+  }));
+  console.log('  opened:', JSON.stringify(tour1));
+  if (!tour1.spot || !tour1.card) throw new Error('the tour spotlight or card is missing');
+  await page.click('.tour-next');
+  await page.waitForTimeout(500);
+  const step2 = await page.evaluate(() => (document.querySelector('.tour-step') || {}).textContent || '');
+  console.log('  after next:', step2);
+  if (step2.indexOf('2 /') < 0) throw new Error('the tour did not advance');
+  await page.click('#tourSkip');
+  await page.waitForTimeout(500);
+  const tourState = await page.evaluate(() =>
+    JSON.parse(localStorage.getItem('schedule-maker-tour-v1') || '{}'));
+  console.log('  state:', JSON.stringify(tourState));
+  if (!tourState.fullDone) throw new Error('the first-run tour was not marked as done');
+  if (await page.$('#tourRoot')) throw new Error('the tour overlay did not close');
+
   console.log('\nstats:', (await page.textContent('#stats')).replace(/\s+/g, ' ').trim());
 
   const tabs = await page.$$eval('#tabs .tab', els => els.map(e => e.textContent.trim()));
@@ -189,6 +214,21 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   if (afterRemove !== beforeFixed || stillMapped) {
     throw new Error('removing the teacher did not restore the list');
   }
+
+  // ---- replay the tutorial from Settings ----
+  await page.click('#tourBtn');
+  await page.waitForSelector('#tourRoot', { timeout: 5000 });
+  await page.waitForFunction(() => {
+    const t = document.querySelector('.tour-title');
+    return t && t.textContent.trim().length > 0;
+  }, { timeout: 3000 });
+  const replayTitle = await page.evaluate(() =>
+    (document.querySelector('.tour-title') || {}).textContent || '');
+  console.log('  replay tour:', replayTitle);
+  if (!replayTitle) throw new Error('the replay tour has no title');
+  await page.click('#tourSkip');
+  await page.waitForTimeout(400);
+  if (await page.$('#tourRoot')) throw new Error('the replay tour did not close');
 
   // ---- separate monthly schedules ----
   console.log('\n=== MONTHLY SPLITS ===');

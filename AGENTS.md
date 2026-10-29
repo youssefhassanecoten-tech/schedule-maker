@@ -107,7 +107,10 @@ That updates `SM.config.VERSION`, `package.json`, the service-worker `CACHE` and
 `entries` array in `src/changelog.js` — that is what the footer's version pill
 opens, and `npm run check:changelog` fails if the counts no longer match
 `SM.config.VERSION` or if the newest entry's `version` is not the running
-version. Documentation-only and housekeeping commits do not bump the version.
+version. If the change adds or moves controls, add 1–3 steps for that version to
+`updates` in `src/tours.js` (they are shown once, on the first load after the
+update; `npm run check:tour` validates them). Documentation-only and housekeeping
+commits do not bump the version.
 
 ## Before you change anything
 
