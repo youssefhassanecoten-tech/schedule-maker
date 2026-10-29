@@ -6,7 +6,7 @@
   var STR = {
     ru: {
       appTitle: 'Составитель расписания',
-      appSubtitle: 'Кафедра русского языка как иностранного',
+      appSubtitle: 'Расписание без хаоса',
       langName: 'Русский',
       dropTitle: 'Загрузите файл расписания',
       dropHint: 'Перетащите сюда Raspisanie_versia_N.docx или нажмите для выбора',
@@ -182,7 +182,7 @@
     },
     en: {
       appTitle: 'Schedule Maker',
-      appSubtitle: 'Department of Russian as a Foreign Language',
+      appSubtitle: 'Schedules, sorted.',
       langName: 'English',
       dropTitle: 'Upload the schedule file',
       dropHint: 'Drop Raspisanie_versia_N.docx here, or click to browse',

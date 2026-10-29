@@ -109,7 +109,10 @@ body {
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .brand-sub {
-  font-size: 11.5px; color: var(--text-dim);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  color: var(--accent-text);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 

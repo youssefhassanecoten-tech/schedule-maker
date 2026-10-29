@@ -1,7 +1,7 @@
 {
   "name": "Schedule Maker — Составитель расписания",
   "short_name": "Schedule Maker",
-  "description": "Automatic schedule maker and editor for the Department of Russian as a Foreign Language. Reads Raspisanie_versia_N.docx and produces the weekly schedule, the monthly schedule and the auditorium request.",
+  "description": "Schedule Maker — turn one schedule grid into the weekly schedule, the monthly schedule and the auditorium request.",
   "lang": "ru",
   "dir": "ltr",
   "start_url": "./",
@@ -35,7 +35,7 @@
     {
       "name": "Open a schedule file",
       "short_name": "Open file",
-      "description": "Load Raspisanie_versia_N.docx and generate the department documents",
+      "description": "Load Raspisanie_versia_N.docx and generate the weekly, monthly and request documents",
       "url": "./?action=open",
       "icons": [{ "src": "assets/icon-192.png", "sizes": "192x192" }]
     },
