@@ -80,14 +80,31 @@ documents.
 * `src/config.js` holds all magic values: rooms, time blocks, semester dates,
   fixed/preferred rooms, and the literal text of the Zayavka form.
 * The running version is `SM.config.VERSION` (shown in the footer and in
-  Settings → About). Keep it in sync with `version` in `package.json`; bump the
-  service-worker `CACHE` in `sw.js` whenever shipped assets change.
+  Settings → About). It follows `MAJOR.MEDIUM.MINOR` = the count of major, medium
+  and minor product changes since the beginning, documented in `CHANGELOG.md`.
+  Keep it in sync with `version` in `package.json`; bump the service-worker
+  `CACHE` in `sw.js` whenever shipped assets change.
 * Every user-facing string lives in `src/i18n.js` in **both** `ru` and `en`.
   Never hard-code UI text in `ui.js`.
 * Templates are pure: `build(model, …)` returns a `Doc` and never touches the
   DOM.
 * `SM.model.recompute(model)` is the single entry point for live edits — it
   renumbers and reallocates in place.
+
+## Every change ships with its version
+
+The version is a **count**, not a calendar: `MAJOR.MEDIUM.MINOR` = how many major,
+medium and minor product changes the app has received since the beginning
+(`CHANGELOG.md` holds the mapping). Every product change MUST be committed
+together with its bumped version:
+
+```bash
+npm run version:bump -- <major|medium|minor> "<short description>"
+```
+
+That updates `SM.config.VERSION`, `package.json`, the service-worker `CACHE` and
+`CHANGELOG.md` in one step. Documentation-only and housekeeping commits do not
+bump the version.
 
 ## Before you change anything
 

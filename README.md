@@ -271,6 +271,7 @@ end time are preserved and flagged with `✎` so they can be confirmed by hand.
 
 ```
 index.html                 markup + script order (classic scripts, no bundler)
+CHANGELOG.md               version = count of major / medium / minor changes
 SECURITY.md                security policy (local-only processing, reporting)
 ACCEPTABLE-USE-POLICY.md   who may use it, prohibited/commercial use, data rules
 manifest.webmanifest       PWA manifest (name, icons, standalone display)
@@ -323,6 +324,26 @@ The site footer links to the user-facing legal pages in the current UI language:
 English. They state that using the site constitutes acceptance of the Terms of
 Use and the Privacy Policy, and that all rights in the product remain with the
 copyright holder.
+
+---
+
+## Versioning
+
+The version is not calendar-based: it is the **count of changes by size** since
+the beginning — `MAJOR.MEDIUM.MINOR` = major + medium + minor product changes.
+The current `5.9.7` means 5 major, 9 medium and 7 minor changes; every change is
+mapped in [`CHANGELOG.md`](CHANGELOG.md). The number lives in
+`SM.config.VERSION`, is mirrored in `package.json`, and is shown in the footer
+and in Settings → About.
+
+Every product change bumps the matching counter in the same commit:
+
+```bash
+npm run version:bump -- <major|medium|minor> "<short description>"
+```
+
+The script updates `SM.config.VERSION`, `package.json`, the service-worker
+`CACHE` and `CHANGELOG.md` together. Documentation-only changes do not bump it.
 
 ---
 
