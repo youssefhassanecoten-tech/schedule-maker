@@ -53,6 +53,12 @@ documents.
   default `2026-11-02`), not from the department's `2026-08-31`; `(1-8)` on a ПО
   group is therefore November–December, while `(1-8)` on a normal group is
   September–October.
+* **A holiday is a whole date** (`model.holidays`, ISO). It overrides that day's
+  lessons: they get no room, never overflow and are left out of the Zayavka, but
+  the weekly/monthly documents print them **red** (`SM.config.HOLIDAY`) and the
+  monthly date cell is red too. Numbering does **not** change — a holiday cancels
+  a lesson, it does not renumber the group. Marked by double-clicking a day
+  header; the file upload is a disabled DEMO until its format is agreed.
 * **The Zayavka is never auto-filled with rooms.** Date and time only; pavilion
   and room stay blank by design. **One row per extra room** — a block that needs
   three more rooms produces three rows, not one.

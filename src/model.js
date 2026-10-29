@@ -7,6 +7,25 @@
   var SM = global.SM || (global.SM = {});
   var U = SM.util;
 
+  /* Normalise a list of ISO dates supplied by the UI. */
+  function normalizeHolidays(list) {
+    var out = [];
+    (list || []).forEach(function (d) {
+      d = String(d || '').trim();
+      if (U.isValidISO && U.isValidISO(d) && out.indexOf(d) < 0) out.push(d);
+    });
+    out.sort();
+    return out;
+  }
+
+  /* Flag every lesson that falls on a holiday date. */
+  function applyHolidays(occ, holidays) {
+    var set = Object.create(null);
+    (holidays || []).forEach(function (d) { set[d] = true; });
+    occ.forEach(function (o) { o.holiday = !!set[o.date]; });
+    return set;
+  }
+
   function createModel(grid, options) {
     options = options || {};
     var semester = Object.assign({}, SM.config.semester, options.semester || {});
@@ -14,6 +33,8 @@
 
     var res = SM.resolve.build(grid, { semester: semester });
     var occ = res.occurrences;
+    var holidays = normalizeHolidays(options.holidays);
+    var holidaySet = applyHolidays(occ, holidays);
 
     var counterInfo = SM.counters.countLessons(occ);
     var alloc = SM.rooms.allocate(occ, { registry: res.registry });
@@ -43,6 +64,8 @@
       }),
       occurrences: occ,
       registry: res.registry,
+      holidays: holidays,
+      holidaySet: holidaySet,
       byWeek: byWeek,
       byDate: byDate,
       byMonth: byMonth,
@@ -84,6 +107,8 @@
   /* Recompute numbers + rooms after a live edit (room change, lesson deletion). */
   function recompute(model) {
     var occ = model.occurrences;
+    model.holidays = normalizeHolidays(model.holidays);
+    model.holidaySet = applyHolidays(occ, model.holidays);
     SM.counters.countLessons(occ);
     var alloc = SM.rooms.allocate(occ, { registry: model.registry });
 
@@ -202,6 +227,10 @@
       byWeek: byWeek,
       byMonth: byMonth,
       files: model.files,
+      /* The monthly date row is painted red for holidays, so the view must carry
+       * the same holiday set as the full model. */
+      holidays: model.holidays,
+      holidaySet: model.holidaySet,
       groups: (groups || []).slice()
     };
   }
@@ -209,7 +238,8 @@
   SM.model = {
     createModel: createModel, recompute: recompute, weeksInMonth: weeksInMonth,
     activeMonths: activeMonths, allGroups: allGroups, parseGroupList: parseGroupList,
-    resolveSplits: resolveSplits, monthlyView: monthlyView
+    resolveSplits: resolveSplits, monthlyView: monthlyView,
+    normalizeHolidays: normalizeHolidays, applyHolidays: applyHolidays
   };
 
 })(typeof window !== 'undefined' ? window : globalThis);

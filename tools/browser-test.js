@@ -222,6 +222,47 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   if (uiInfo.onlineSelects !== 0) throw new Error('online lesson still shows a room selector');
   if (uiInfo.offlineSelects !== 1) throw new Error('in-person lesson lost its room selector');
 
+  // ---- holidays: double-click a day header, demo upload must be inert ----
+  console.log('\n=== HOLIDAYS ===');
+  await clickTab('calendar');
+  let heads = await page.$$('#weekGrid thead th.day-head');
+  await heads[0].dblclick();
+  await page.waitForTimeout(600);
+  const h1 = await page.evaluate(() => ({
+    count: SM.ui.state.holidays.length,
+    iso: SM.ui.state.holidays[0] || null,
+    cls: (document.querySelector('#weekGrid th.day-head') || {}).className || '',
+    chips: document.querySelectorAll('#holidaysList .holiday-chip').length,
+    highlighted: document.querySelectorAll('#weekGrid .cellbox.is-holiday').length
+  }));
+  console.log('  after dblclick:', JSON.stringify(h1));
+  if (h1.count !== 1) throw new Error('double-click did not mark a holiday');
+  if (h1.cls.indexOf('is-holiday') < 0) throw new Error('day header is not marked red');
+  if (h1.chips !== 1) throw new Error('the holiday chip is missing in Settings');
+  if (!h1.highlighted) throw new Error('holiday lessons are not highlighted');
+
+  const inert = await page.evaluate(() => {
+    const box = document.querySelector('#holidayUpload');
+    return {
+      pointer: getComputedStyle(box).pointerEvents,
+      grayscale: getComputedStyle(box).filter,
+      disabled: document.querySelector('#holidayFile').disabled,
+      tag: document.querySelector('#holidayDemo').textContent.trim(),
+      glow: getComputedStyle(document.querySelector('#holidayDemo')).animationName
+    };
+  });
+  console.log('  demo upload :', JSON.stringify(inert));
+  if (inert.pointer !== 'none' || !inert.disabled) throw new Error('the holiday upload is still interactive');
+  if (!inert.tag || inert.glow === 'none') throw new Error('the DEMO tag is missing or not glowing');
+
+  await clickTab('calendar');
+  heads = await page.$$('#weekGrid thead th.day-head');
+  await heads[0].dblclick();
+  await page.waitForTimeout(500);
+  const h2 = await page.evaluate(() => SM.ui.state.holidays.length);
+  console.log('  after second dblclick, holidays:', h2);
+  if (h2 !== 0) throw new Error('double-click did not clear the holiday');
+
   console.log('\n=== ERRORS (' + errors.length + ') ===');
   errors.forEach(e => console.log('  ' + e));
   const warns = logs.filter(l => l.startsWith('warning'));

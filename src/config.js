@@ -214,6 +214,10 @@
   SM.config.MONTHLY_HATCH = { val: 'ltUpDiag', color: '808080', fill: 'FFFFFF' };
   SM.config.MONTHLY_SEP_W = 180;
 
+  /* A holiday overrides the lessons of its date: they are not taught, need no
+   * room and are printed in red so the override is visible. */
+  SM.config.HOLIDAY = { fill: 'FFE0E0', color: 'C00000' };
+
   SM.monthNameRu = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля',
                     'августа', 'сентября', 'октября', 'ноября', 'декабря'];
   SM.monthNameRuGen = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля',

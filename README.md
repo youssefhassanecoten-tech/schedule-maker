@@ -85,6 +85,10 @@ schedule generated/
   columns around the table and between the day groups, shaded with a Word
   pattern (`ltUpDiag`). Only the monthly is decorated — the weekly schedule and
   the Zayavka stay plain.
+* Holidays are whole dates: they cancel that day's lessons (no room, no Zayavka
+  entry) and print them red in the weekly and monthly documents. Mark them by
+  double-clicking a day header in the calendar. The holiday file upload is a
+  disabled DEMO until its format is agreed.
 * A lesson marked `-ДО` (distance) stays in the weekly schedule with `Nн-ДО`
   instead of a room; it is excluded from the Zayavka and never counts as
   overflow.

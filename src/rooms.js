@@ -32,8 +32,9 @@
     var pools = Object.create(null);   // blockKey -> { used:{}, lessons:[] }
     occurrences.forEach(function (o) {
       /* A distance lesson ("-ДО") is taught online: it needs no auditorium, so
-       * it never joins a room pool and can never cause overflow. */
-      if (o.online) { o.room = null; o.overflow = false; o.locked = false; return; }
+       * it never joins a room pool and can never cause overflow. A holiday
+       * overrides its lessons for the same reason. */
+      if (o.online || o.holiday) { o.room = null; o.overflow = false; o.locked = false; return; }
       var k = blockKey(o);
       var p = pools[k] || (pools[k] = { used: Object.create(null), lessons: [] });
       p.lessons.push(o);
@@ -45,7 +46,7 @@
     // rotate the fallback room so the seven rooms stay evenly loaded.
     var teacherUse = Object.create(null);
     occurrences.forEach(function (o) {
-      if (o.online) return;
+      if (o.online || o.holiday) return;
       var t = teacherUse[o.teacherSurname] || (teacherUse[o.teacherSurname] = Object.create(null));
       t[o.room] = (t[o.room] || 0) + 1;
     });
@@ -143,7 +144,7 @@
     // A fixed teacher pushed out of their own room is worth reporting.
     var displaced = Object.create(null);
     occurrences.forEach(function (o) {
-      if (o.online) return;
+      if (o.online || o.holiday) return;
       var fx = registry ? registry.fixedRoom(o.teacher) : null;
       if (fx && o.room !== fx && !o.overflow) {
         var k = o.teacher + '|' + fx;
@@ -170,8 +171,9 @@
     var groups = Object.create(null);
     occurrences.forEach(function (o) {
       /* Online lessons are not in any auditorium, so they must not count against
-       * the department's rooms in the request. */
-      if (o.online) return;
+       * the department's rooms in the request; neither do cancelled (holiday)
+       * lessons. */
+      if (o.online || o.holiday) return;
       var k = blockKey(o);
       (groups[k] || (groups[k] = [])).push(o);
     });

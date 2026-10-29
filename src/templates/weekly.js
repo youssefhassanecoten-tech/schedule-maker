@@ -95,11 +95,16 @@
         if (!cells.length) { row.cell({ text: '' }); return; }
         var lines = cellText(cells, week, lang);
         var over = cells.some(function (o) { return o.overflow; });
+        /* A holiday overrides the lessons of its date and paints them red; it
+         * takes precedence over the overflow highlight. */
+        var hol = cells.some(function (o) { return o.holiday; });
+        var HL = SM.config.HOLIDAY;
         row.cell({
           text: lines,
           align: 'center',
           size: 13,
-          fill: over && opts.highlightOverflow !== false ? 'FFFF00' : null
+          fill: hol ? HL.fill : (over && opts.highlightOverflow !== false ? 'FFFF00' : null),
+          color: hol ? HL.color : null
         });
       });
     });

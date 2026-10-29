@@ -26,6 +26,9 @@
     /* Separate monthly schedules: [{ name, groups }] where groups is the text
      * the user typed ("181, 182"). Everything not listed stays in the main flow. */
     monthlySplits: [],
+    /* Dates the department does not teach (ISO). A holiday overrides that day's
+     * lessons: no room is needed and the documents print them red. */
+    holidays: [],
     rootFolder: C.output.rootFolder,
     weekFolderPrefix: C.output.weekFolderPrefix,
     autoOpen: false,
@@ -101,6 +104,7 @@
         lang: state.lang, theme: state.theme, semester: state.semester,
         rooms: state.rooms, files: state.files,
         rootFolder: state.rootFolder, monthlySplits: state.monthlySplits,
+        holidays: state.holidays,
         weekFolderPrefix: state.weekFolderPrefix, docLang: state.docLang,
         pageSize: state.pageSize, highlight: state.highlight, autoOpen: state.autoOpen, saveAs: state.saveAs,
         fixed: C.FIXED_ROOMS, pref: C.TEACHER_ROOM_PREF
@@ -122,6 +126,7 @@
           .filter(function (x) { return x && typeof x === 'object'; })
           .map(function (x) { return { name: String(x.name || ''), groups: String(x.groups || '') }; });
       }
+      if (Array.isArray(s.holidays)) state.holidays = SM.model.normalizeHolidays(s.holidays);
       if (s.fixed) C.FIXED_ROOMS = s.fixed;
       if (s.pref) C.TEACHER_ROOM_PREF = s.pref;
     } catch (e) { /* ignore */ }
@@ -178,7 +183,8 @@
     if (!state.grid) return;
     state.model = SM.model.createModel(state.grid, {
       semester: state.semester,
-      files: state.files
+      files: state.files,
+      holidays: state.holidays
     });
   }
 
@@ -207,6 +213,7 @@
       rooms: state.rooms.slice(),
       files: Object.assign({}, state.files),
       monthlySplits: JSON.parse(JSON.stringify(state.monthlySplits)),
+      holidays: state.holidays.slice(),
       rootFolder: state.rootFolder,
       pageSize: state.pageSize,
       highlight: state.highlight,
@@ -257,6 +264,7 @@
             .filter(function (x) { return x && typeof x === 'object'; })
             .map(function (x) { return { name: String(x.name || ''), groups: String(x.groups || '') }; });
         }
+        if (Array.isArray(run.holidays)) state.holidays = SM.model.normalizeHolidays(run.holidays);
         if (run.rootFolder) state.rootFolder = run.rootFolder;
         if (run.pageSize) state.pageSize = run.pageSize;
         if (run.docLang) state.docLang = run.docLang;
@@ -473,6 +481,51 @@
 
   /* ------------------------------------------------------------ week grid */
 
+  /* ------------------------------------------------------------ holidays */
+
+  function isHoliday(iso) { return state.holidays.indexOf(iso) >= 0; }
+
+  /*
+   * A holiday is a whole date, not one lesson: marking it cancels every lesson
+   * of that day, so no room is allocated and the documents print those lessons
+   * red. Double-clicking the same day again clears it.
+   */
+  function toggleHoliday(iso) {
+    var i = state.holidays.indexOf(iso);
+    var adding = i < 0;
+    if (adding) state.holidays.push(iso);
+    else state.holidays.splice(i, 1);
+    state.holidays = SM.model.normalizeHolidays(state.holidays);
+
+    if (state.model) {
+      state.model.holidays = state.holidays.slice();
+      recompute(state.week);
+    } else {
+      saveSettings();
+    }
+    renderHolidays();
+    toast(t(adding ? 'holidayAdded' : 'holidayRemoved') + ': ' + U.fmtRu(iso), 'ok');
+  }
+
+  function renderHolidays() {
+    var host = $('#holidaysList');
+    if (!host) return;
+    host.innerHTML = '';
+    if (!state.holidays.length) {
+      host.appendChild(el('div', { class: 'split-main', text: t('holidaysEmpty') }));
+      return;
+    }
+    state.holidays.forEach(function (iso) {
+      host.appendChild(el('span', { class: 'holiday-chip' }, [
+        el('span', { text: U.fmtRu(iso) }),
+        el('button', {
+          type: 'button', title: t('holidayRemoved'), text: '✕',
+          onclick: function () { toggleHoliday(iso); }
+        })
+      ]));
+    });
+  }
+
   function renderWeekGrid() {
     var m = state.model, table = $('#weekGrid');
     table.innerHTML = '';
@@ -497,7 +550,17 @@
     });
     dayGroups.forEach(function (g) {
       var name = state.lang === 'en' ? C.DAYS_EN[g.day] : C.DAYS_RU[g.day];
-      dayRow.appendChild(el('th', { colspan: g.n, text: name + ' · ' + U.fmtRu(U.addDays(mon, g.day)) }));
+      var iso = U.addDays(mon, g.day);
+      var hol = isHoliday(iso);
+      /* Double-click a day header to make that date a holiday (and again to
+       * clear it). Holidays override the lessons of the day in every schedule. */
+      dayRow.appendChild(el('th', {
+        colspan: g.n,
+        class: 'day-head' + (hol ? ' is-holiday' : ''),
+        title: t('holidayHint'),
+        text: name + ' · ' + U.fmtRu(iso) + (hol ? ' · ' + t('holiday') : ''),
+        ondblclick: function () { toggleHoliday(iso); }
+      }));
     });
     table.appendChild(el('thead', {}, [dayRow, timeRow(weekLessons, mon)]));
 
@@ -530,13 +593,20 @@
   function lessonCell(o) {
     var box = el('div', {
       class: 'cellbox' + (o.overflow ? ' is-overflow' : '') +
-             (o.locked ? ' is-locked' : '') + (o.notes && o.notes.length ? ' is-note' : ''),
+             (o.locked ? ' is-locked' : '') + (o.notes && o.notes.length ? ' is-note' : '') +
+             (o.holiday ? ' is-holiday' : ''),
       title: (o.teacher + ' · ' + U.fmtRuLong(o.date) + ' · ' +
-              C.BLOCK_BY_KEY[o.block].labelRu + (o.notes.length ? '  (' + o.notes.join('; ') + ')' : ''))
+              C.BLOCK_BY_KEY[o.block].labelRu + (o.notes.length ? '  (' + o.notes.join('; ') + ')' : '') +
+              (o.holiday ? '  · ' + t('holiday') : ''))
     }, [
       el('div', { class: 'g', text: o.group }),
       el('div', { class: 't', text: '#' + o.topic })
     ]);
+    /* A holiday overrides the lesson: no room to choose. */
+    if (o.holiday) {
+      box.appendChild(el('div', { class: 't', text: t('holiday') }));
+      return box;
+    }
     /* A distance lesson has no auditorium to choose. */
     if (o.online) {
       box.appendChild(el('div', { class: 't', text: t('online') }));
@@ -618,7 +688,7 @@
         if (!sub.length) return;
         var blk = C.BLOCK_BY_KEY[b];
         var used = {};
-        var offline = sub.filter(function (o) { return !o.online; });
+        var offline = sub.filter(function (o) { return !o.online && !o.holiday; });
         offline.forEach(function (o) { if (!o.overflow) used[o.room] = (used[o.room] || 0) + 1; });
         var row = el('div', { class: 'blockrow' }, [
           el('span', { class: 'btime', text: state.lang === 'en' ? blk.labelEn : blk.labelRu }),
@@ -632,7 +702,9 @@
         var chips = el('div', { class: 'lessonchips' });
         sub.forEach(function (o) {
           var controls;
-          if (o.online) {
+          if (o.holiday) {
+            controls = el('span', { class: 'pill is-warn', text: t('holiday') });
+          } else if (o.online) {
             controls = el('span', { class: 'pill', text: t('online') });
           } else {
             var sel = el('select', { class: 'roomsel' });
@@ -647,7 +719,7 @@
             controls = sel;
           }
           chips.appendChild(el('span', {
-            class: 'chip' + (o.overflow ? ' is-overflow' : ''),
+            class: 'chip' + (o.overflow ? ' is-overflow' : '') + (o.holiday ? ' is-holiday' : ''),
             title: o.teacher + (o.notes && o.notes.length ? ' · ' + o.notes.join('; ') : '')
           }, [
             el('span', { class: 'g', text: o.group }),
@@ -1001,6 +1073,7 @@
 
     var m = state.model;
     renderSplits();
+    renderHolidays();
 
     var about = $('#aboutList');
     about.innerHTML = '';
@@ -1155,6 +1228,14 @@
     $('#splitsHint').textContent = t('monthlySplitsHint');
     $('#addSplit').textContent = '+ ' + t('splitAdd');
     renderSplits();
+    if ($('#tHolidays')) {
+      $('#tHolidays').textContent = t('holidays');
+      $('#holidaysHint').textContent = t('holidaysHint');
+      $('#holidayDemo').textContent = t('holidaysDemo');
+      $('#holidayUploadLabel').textContent = t('holidayUpload');
+      $('#holidayDemoHint').textContent = t('holidaysDemoHint');
+      renderHolidays();
+    }
     $('#treeTitle').textContent = t('generatedTree');
     $('#savePathTitle').textContent = t('savePathTitle');
     $('#lblOpenAfter').textContent = t('openAfter');
@@ -1432,6 +1513,7 @@
       state.files = { weekly: C.files.weekly, monthly: 'Raspisanie_M_{month}_{year}.docx', zayavka: C.files.zayavka };
       state.rootFolder = C.output.rootFolder;
       state.monthlySplits = [];
+      state.holidays = [];
       saveSettings();
       rebuildModel();
       renderAll();

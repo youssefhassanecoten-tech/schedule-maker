@@ -201,9 +201,13 @@
       rc.cell({ text: '', width: timeW, vMerge: 'continue' });
       for (var d3 = 0; d3 < DAYS; d3++) {
         sep(rc);
+        var dd = U.addDays(mon, d3);
+        var dh = !!(model.holidaySet && model.holidaySet[dd]);
         rc.cell({
-          text: U.fmtRu(U.addDays(mon, d3), true),
-          gridSpan: SUB, align: 'center', size: SZ
+          text: U.fmtRu(dd, true),
+          gridSpan: SUB, align: 'center', size: SZ,
+          fill: dh ? SM.config.HOLIDAY.fill : null,
+          color: dh ? SM.config.HOLIDAY.color : null
         });
       }
       sep(rc);
@@ -258,15 +262,20 @@
             for (var d4 = 0; d4 < DAYS; d4++) {
               sep(row);
               var o = days[d4][r];
-              var hl = o && o.overflow && opts.highlightOverflow !== false ? 'FFFF00' : null;
+              var HOL = SM.config.HOLIDAY;
+              /* Holiday red wins over the overflow highlight. */
+              var hf = o && o.holiday
+                ? HOL.fill
+                : (o && o.overflow && opts.highlightOverflow !== false ? 'FFFF00' : null);
+              var hc = o && o.holiday ? HOL.color : null;
               if (!o) {
                 for (var e = 0; e < SUB; e++) row.cell({ text: '' });
                 continue;
               }
-              row.cell({ text: o.group, align: 'center', size: SZ, fill: hl });
-              row.cell({ text: o.teacher, align: 'center', size: SZ, fill: hl });
-              row.cell({ text: o.room || '', align: 'center', size: SZ, fill: hl });
-              row.cell({ text: String(o.topic || ''), align: 'center', size: SZ, fill: hl });
+              row.cell({ text: o.group, align: 'center', size: SZ, fill: hf, color: hc });
+              row.cell({ text: o.teacher, align: 'center', size: SZ, fill: hf, color: hc });
+              row.cell({ text: o.room || '', align: 'center', size: SZ, fill: hf, color: hc });
+              row.cell({ text: String(o.topic || ''), align: 'center', size: SZ, fill: hf, color: hc });
             }
             sep(row);
             if (s === 0 && r === 0) firstBlock = false;

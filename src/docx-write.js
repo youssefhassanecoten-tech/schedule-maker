@@ -228,7 +228,7 @@
             return '<w:p>' + pPr + runs(line, {
               font: cfg.font || this.doc.font,
               size: cfg.size || this.doc.defaultSize,
-              bold: cfg.bold, italic: cfg.italic
+              bold: cfg.bold, italic: cfg.italic, color: cfg.color
             }) + '</w:p>';
           }, this).join('');
         }
