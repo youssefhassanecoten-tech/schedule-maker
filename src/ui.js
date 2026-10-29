@@ -184,7 +184,8 @@
     state.model = SM.model.createModel(state.grid, {
       semester: state.semester,
       files: state.files,
-      holidays: state.holidays
+      holidays: state.holidays,
+      rooms: state.rooms
     });
   }
 
@@ -1056,12 +1057,12 @@
     $('#semStart').value = state.semester.firstMonday;
     $('#semWeeks').value = state.semester.weeks;
     $('#prepStart').value = state.semester.prepFirstMonday || '';
-    $('#roomsList').value = state.rooms.join(', ');
     $('#rootFolder').value = state.rootFolder;
     $('#patWeekly').value = state.files.weekly;
     $('#patMonthly').value = state.files.monthly;
     $('#patZayavka').value = state.files.zayavka;
 
+    renderRoomsList();
     renderFixedRooms();
     var pref = $('#prefRooms');
     pref.innerHTML = '';
@@ -1090,6 +1091,89 @@
       about.appendChild(el('dt', { text: kv[0] }));
       about.appendChild(el('dd', { text: String(kv[1]) }));
     });
+  }
+
+  /* ------------------------------------------------ department rooms UI
+   *
+   * The available room numbers are edited as a list: rename in place, add and
+   * remove. The list drives allocation and capacity (model.rooms), not just the
+   * dropdowns, so removing a room really makes it unavailable.
+   */
+  function renderRoomsList() {
+    var host = $('#roomList');
+    if (!host) return;
+    host.innerHTML = '';
+
+    state.rooms.forEach(function (room, i) {
+      var input = el('input', { type: 'text', value: room });
+      input.onchange = function () {
+        var v = input.value.trim();
+        if (!v) { input.value = room; toast(t('roomEmpty'), 'error'); return; }
+        if (state.rooms.some(function (x, j) { return j !== i && x === v; })) {
+          input.value = room;
+          toast(t('roomDuplicate'), 'error');
+          return;
+        }
+        renameRoomRefs(room, v);
+        state.rooms[i] = v;
+        saveSettings();
+        refreshRooms();
+      };
+      host.appendChild(el('div', { class: 'room-row', 'data-room': room }, [
+        input,
+        el('button', {
+          class: 'btn btn-sm', type: 'button', text: '✕', title: t('roomRemove'),
+          onclick: function () {
+            var removed = state.rooms[i];
+            state.rooms.splice(i, 1);
+            dropRoomRefs(removed);
+            saveSettings();
+            refreshRooms();
+          }
+        })
+      ]));
+    });
+  }
+
+  /* Renaming or deleting a room must not leave the locked/preferred mappings
+   * pointing at a number that no longer exists. */
+  function renameRoomRefs(oldRoom, newRoom) {
+    [C.FIXED_ROOMS, C.TEACHER_ROOM_PREF].forEach(function (map) {
+      Object.keys(map).forEach(function (name) {
+        if (map[name] === oldRoom) map[name] = newRoom;
+      });
+    });
+  }
+
+  function dropRoomRefs(room) {
+    [C.FIXED_ROOMS, C.TEACHER_ROOM_PREF].forEach(function (map) {
+      Object.keys(map).forEach(function (name) {
+        if (map[name] === room) delete map[name];
+      });
+    });
+  }
+
+  function addRoomFromInput() {
+    var input = $('#roomAddInput');
+    if (!input) return;
+    var v = input.value.trim();
+    if (!v) { toast(t('roomEmpty'), 'error'); return; }
+    if (state.rooms.indexOf(v) >= 0) { toast(t('roomDuplicate'), 'error'); return; }
+    state.rooms.push(v);
+    input.value = '';
+    saveSettings();
+    refreshRooms();
+  }
+
+  function refreshRooms() {
+    if (state.model) {
+      state.model.rooms = state.rooms.slice();
+      recompute(state.week);
+    } else {
+      saveSettings();
+      renderRoomsList();
+      renderFixedRooms();
+    }
   }
 
   /* ------------------------------------------------ fixed classrooms UI
@@ -1295,8 +1379,9 @@
     $('#lblSemWeeks').textContent = t('semesterWeeks');
     $('#lblPrepStart').textContent = t('prepStart');
     $('#prepHint').textContent = t('prepHint');
-    $('#lblRooms').textContent = t('rooms');
-    $('#roomsHint').textContent = t('roomsHint');
+    $('#tRoomsList').textContent = t('rooms');
+    $('#roomsListHint').textContent = t('roomsHint');
+    $('#lblRoomAdd').textContent = t('roomAdd');
     $('#lblRoot').textContent = t('rootFolder');
     $('#tSem').textContent = t('settings');
     $('#tFiles').textContent = t('filePatterns');
@@ -1585,11 +1670,9 @@
     $('#applySem').onclick = function () {
       var start = $('#semStart').value;
       var weeks = parseInt($('#semWeeks').value, 10);
-      var rooms = $('#roomsList').value.split(',').map(function (x) { return x.trim(); }).filter(Boolean);
       state.semester.firstMonday = start;
       state.semester.weeks = isNaN(weeks) ? state.semester.weeks : weeks;
       state.semester.prepFirstMonday = $('#prepStart').value || state.semester.prepFirstMonday;
-      state.rooms = rooms.length ? rooms : C.ROOMS.slice();
       state.files.weekly = $('#patWeekly').value || state.files.weekly;
       state.files.monthly = $('#patMonthly').value || state.files.monthly;
       state.files.zayavka = $('#patZayavka').value || state.files.zayavka;
@@ -1617,6 +1700,13 @@
         saveSettings();
         renderSplits();
         renderFiles();
+      };
+    }
+
+    if ($('#roomAddBtn')) {
+      $('#roomAddBtn').onclick = addRoomFromInput;
+      $('#roomAddInput').onkeydown = function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); addRoomFromInput(); }
       };
     }
 

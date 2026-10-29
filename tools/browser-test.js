@@ -123,6 +123,38 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.waitForTimeout(700);
   console.log('  after reset, week selector has', (await page.$$eval('#weekSel option', o => o.length)), 'options');
 
+  // ---- editable room list ----
+  console.log('\n=== ROOM LIST ===');
+  await clickTab('settings');
+  const roomsBefore = await page.$$eval('#roomList .room-row', els => els.length);
+  await page.fill('#roomAddInput', '107');
+  await page.click('#roomAddBtn');
+  await page.waitForTimeout(500);
+  const roomsAfter = await page.$$eval('#roomList .room-row', els => els.length);
+  const roomState = await page.evaluate(() => SM.ui.state.rooms.indexOf('107') >= 0);
+  const roomModel = await page.evaluate(() => SM.ui.state.model.rooms.indexOf('107') >= 0);
+  console.log('  rooms:', roomsBefore, '->', roomsAfter, '| state:', roomState, '| model:', roomModel);
+  if (roomsAfter !== roomsBefore + 1 || !roomState || !roomModel) {
+    throw new Error('adding a room did not update the list and the model');
+  }
+
+  await page.fill('#roomList .room-row[data-room="107"] input', '108');
+  await page.press('#roomList .room-row[data-room="107"] input', 'Tab');
+  await page.waitForTimeout(500);
+  const renamed = await page.evaluate(() => ({
+    has108: SM.ui.state.rooms.indexOf('108') >= 0,
+    has107: SM.ui.state.rooms.indexOf('107') >= 0
+  }));
+  console.log('  rename 107 -> 108:', JSON.stringify(renamed));
+  if (!renamed.has108 || renamed.has107) throw new Error('renaming a room failed');
+
+  await page.click('#roomList .room-row[data-room="108"] button');
+  await page.waitForTimeout(500);
+  const roomsEnd = await page.$$eval('#roomList .room-row', els => els.length);
+  const roomGone = await page.evaluate(() => SM.ui.state.rooms.indexOf('108') < 0);
+  console.log('  after remove:', roomsEnd, '| removed from state:', roomGone);
+  if (roomsEnd !== roomsBefore || !roomGone) throw new Error('removing a room failed');
+
   // ---- add / remove a teacher in the locked-room list ----
   console.log('\n=== LOCKED ROOMS ===');
   await clickTab('settings');
@@ -360,8 +392,8 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
 
   /* What's new page: rendered from src/changelog.js in the page language. */
   for (const [file, title, latest] of [
-    ['changelog.html', 'Что нового', 'Последние изменения'],
-    ['changelog.en.html', "What's new", 'Latest changes']
+    ['changelog.html', 'Что нового', 'Изменения этой версии'],
+    ['changelog.en.html', "What's new", 'Changes in this version']
   ]) {
     await page.goto('file:///' + path.join(ROOT, file).replace(/\\/g, '/'));
     const info = await page.evaluate(() => ({
@@ -369,16 +401,25 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
       version: (document.querySelector('#clVersion') || {}).textContent || '',
       configVersion: 'v' + ((window.SM && SM.config) ? SM.config.VERSION : '?'),
       latestTitle: (document.querySelector('#clLatestTitle') || {}).textContent || '',
-      items: document.querySelectorAll('#clLatest .cl-item').length,
-      total: document.querySelectorAll('#clAll .cl-item').length
+      latestCount: document.querySelectorAll('#clLatest .cl-item').length,
+      latestVersion: ((document.querySelector('#clLatest .cl-version') || {}).textContent || '').trim(),
+      groups: document.querySelectorAll('#clAll .cl-group').length,
+      total: document.querySelectorAll('#clAll .cl-item').length,
+      pdfDisabled: document.querySelector('#clPdf').disabled,
+      pdfMatted: document.querySelector('#clPdf').className.indexOf('is-matted') >= 0
     }));
     console.log('  ' + file + ':', JSON.stringify(info));
     if (info.h1.trim() !== title) throw new Error(file + ' headline is wrong');
     if (info.latestTitle.trim() !== latest) throw new Error(file + ' is not in its language');
-    if (!info.items || !info.total) throw new Error(file + ' rendered no entries');
+    if (info.latestCount !== 1) throw new Error(file + ' does not isolate the current version');
+    if (info.latestVersion !== info.configVersion) {
+      throw new Error(file + ' latest entry is not the running version');
+    }
+    if (!info.groups || !info.total) throw new Error(file + ' rendered no history');
     if (info.version.indexOf(info.configVersion) < 0) {
       throw new Error(file + ' does not show the running version');
     }
+    if (!info.pdfDisabled || !info.pdfMatted) throw new Error(file + ' PDF button is not matted yet');
   }
 
   for (const [file, needle] of [

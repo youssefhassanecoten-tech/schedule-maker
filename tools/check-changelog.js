@@ -26,6 +26,8 @@ entries.forEach((e, i) => {
     'entry ' + i + ' has an unknown level: ' + e.level);
   check(/^\d{4}-\d{2}-\d{2}$/.test(e.date || ''),
     'entry ' + i + ' has no ISO date');
+  check(/^\d+\.\d+\.\d+$/.test(e.version || ''),
+    'entry ' + i + ' has no release version');
   check(!!(e.ru && e.en), 'entry ' + i + ' is not bilingual');
   if (counts[e.level] != null) counts[e.level]++;
 });
@@ -36,6 +38,14 @@ check(parts[1] === counts.medium,
   'version medium ' + parts[1] + ' != ' + counts.medium + ' medium entries');
 check(parts[2] === counts.minor,
   'version minor ' + parts[2] + ' != ' + counts.minor + ' minor entries');
+
+/* The newest entry is the release that is running: its version must be the
+ * footer/config version, and the latest section will show exactly it. */
+const vkey = v => { const p = String(v).split('.').map(Number); return p[0] * 1e6 + p[1] * 1e3 + p[2]; };
+const newest = entries.reduce((best, e) =>
+  vkey(e.version) > vkey(best) ? e.version : best, '0.0.0');
+check(newest === SM.config.VERSION,
+  'newest changelog version ' + newest + ' != config ' + SM.config.VERSION);
 
 ['changelog.html', 'changelog.en.html'].forEach(f => {
   const p = path.join(ROOT, f);

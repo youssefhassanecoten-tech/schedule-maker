@@ -353,9 +353,11 @@ longer match the version. Documentation-only changes do not bump it.
 ### What's new
 
 Clicking the version pill in the footer opens `changelog.html` (Russian UI) or
-`changelog.en.html` (English UI). The page shows the latest changes and the full
-history grouped into major / medium / minor, rendered from the bilingual
-`src/changelog.js` data (`src/changelog-page.js`).
+`changelog.en.html` (English UI). The page shows the changes of the **running
+version**, then the history grouped by major version (at most 7 major versions
+back), rendered from the bilingual `src/changelog.js` data
+(`src/changelog-page.js`). Every entry carries the release version it shipped in.
+A matted PDF button is in place for the future full-history export.
 
 ---
 

@@ -123,7 +123,7 @@
 
   /* Shown in the footer and in Settings -> About so it is obvious which build is
    * running. Keep in sync with "version" in package.json. */
-  var VERSION = '5.11.7';
+  var VERSION = '5.13.7';
 
   SM.config = {
     VERSION: VERSION,

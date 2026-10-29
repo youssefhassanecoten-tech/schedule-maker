@@ -1,5 +1,10 @@
 /* Renders the bilingual "What's new" page from SM.changelog + SM.config.
- * The page language comes from <html lang="ru|en">. */
+ *
+ *   - "Changes in this version" shows only entries of the running version
+ *   - "Change history" groups everything older by major version, newest first,
+ *     and keeps at most the last 7 major versions
+ *   - the PDF button is intentionally inert until the full-history export exists
+ */
 (function (global) {
   'use strict';
   var SM = global.SM || {};
@@ -8,11 +13,14 @@
   var T = {
     ru: {
       version: 'версия',
-      latest: 'Последние изменения',
-      all: 'Вся история изменений',
-      major: 'Крупные изменения',
-      medium: 'Средние изменения',
-      minor: 'Мелкие изменения',
+      latest: 'Изменения этой версии',
+      all: 'История изменений',
+      major: function (n) { return 'Версия ' + n + '.x'; },
+      historyNote: 'Показаны последние 7 крупных версий. Полная история будет доступна в PDF.',
+      pdfSoon: 'Скоро: полная история в PDF',
+      majorLabel: 'Крупные изменения',
+      mediumLabel: 'Средние изменения',
+      minorLabel: 'Мелкие изменения',
       months: ['янв', 'фев', 'мар', 'апр', 'мая', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
       summary: function (v, c) {
         return 'Версия ' + v + ' — ' + c[0] + ' крупных, ' + c[1] + ' средних и ' +
@@ -21,11 +29,14 @@
     },
     en: {
       version: 'version',
-      latest: 'Latest changes',
-      all: 'Full history',
-      major: 'Major changes',
-      medium: 'Medium changes',
-      minor: 'Minor changes',
+      latest: 'Changes in this version',
+      all: 'Change history',
+      major: function (n) { return 'Version ' + n + '.x'; },
+      historyNote: 'Showing the last 7 major versions. The full history will be available as a PDF.',
+      pdfSoon: 'Soon: the full history as a PDF',
+      majorLabel: 'Major changes',
+      mediumLabel: 'Medium changes',
+      minorLabel: 'Minor changes',
       months: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
       summary: function (v, c) {
         return 'Version ' + v + ' — ' + c[0] + ' major, ' + c[1] + ' medium and ' +
@@ -34,8 +45,23 @@
     }
   };
   var t = T[lang];
-  var entries = (SM.changelog && SM.changelog.entries) || [];
   var version = (SM.config && SM.config.VERSION) || '';
+  var entries = ((SM.changelog && SM.changelog.entries) || []).slice();
+
+  function vnum(v) {
+    return String(v || '0.0.0').split('.').map(function (x) { return +x || 0; });
+  }
+  function cmp(a, b) {
+    var x = vnum(a), y = vnum(b);
+    for (var i = 0; i < 3; i++) if (x[i] !== y[i]) return y[i] - x[i];
+    return 0;
+  }
+  entries.sort(function (a, b) { return cmp(a.version, b.version); });
+
+  function levelLabel(level) {
+    return level === 'major' ? t.majorLabel : level === 'medium' ? t.mediumLabel : t.minorLabel;
+  }
+
   var counts = { major: 0, medium: 0, minor: 0 };
   entries.forEach(function (e) { counts[e.level] = (counts[e.level] || 0) + 1; });
 
@@ -56,8 +82,9 @@
   function item(e) {
     var wrap = node('div', 'cl-item');
     var top = node('div', 'cl-top');
-    top.appendChild(node('span', 'cl-level ' + e.level, t[e.level]));
+    top.appendChild(node('span', 'cl-level ' + e.level, levelLabel(e.level)));
     top.appendChild(node('span', 'cl-date', fmtDate(e.date)));
+    top.appendChild(node('span', 'cl-version', 'v' + e.version));
     if (e.commit) top.appendChild(node('span', 'cl-commit', e.commit));
     wrap.appendChild(top);
     wrap.appendChild(node('p', 'cl-text', e[lang] || ''));
@@ -79,19 +106,37 @@
   fill('clSummary', t.summary(version, [counts.major, counts.medium, counts.minor]));
   fill('clLatestTitle', t.latest);
   fill('clAllTitle', t.all);
+  fill('clHistoryNote', t.historyNote);
 
-  var latest = document.getElementById('clLatest');
-  if (latest) latest.appendChild(list(entries.slice(0, 4)));
+  /* Only the entries that belong to the running version. */
+  var latest = entries.filter(function (e) { return e.version === version; });
+  if (!latest.length && entries.length) latest = [entries[0]];
+  var latestSet = latest.slice();
+  var latestHost = document.getElementById('clLatest');
+  if (latestHost) latestHost.appendChild(list(latest));
+
+  /* Everything else, grouped by major version, at most 7 major versions back. */
+  var history = entries.filter(function (e) { return latestSet.indexOf(e) < 0; });
+  var groups = Object.create(null);
+  history.forEach(function (e) {
+    var m = (e.version || '0').split('.')[0];
+    (groups[m] || (groups[m] = [])).push(e);
+  });
+  var majors = Object.keys(groups).map(Number).sort(function (a, b) { return b - a; }).slice(0, 7);
 
   var all = document.getElementById('clAll');
   if (all) {
-    ['major', 'medium', 'minor'].forEach(function (level) {
-      var items = entries.filter(function (e) { return e.level === level; });
-      if (!items.length) return;
+    majors.forEach(function (m) {
       var group = node('div', 'cl-group');
-      group.appendChild(node('h3', null, t[level] + ' (' + items.length + ')'));
-      group.appendChild(list(items));
+      group.appendChild(node('h3', null, t.major(m)));
+      group.appendChild(list(groups[String(m)]));
       all.appendChild(group);
     });
+  }
+
+  var pdf = document.getElementById('clPdf');
+  if (pdf) {
+    pdf.title = t.pdfSoon;
+    pdf.setAttribute('aria-label', t.pdfSoon);
   }
 })(typeof window !== 'undefined' ? window : globalThis);

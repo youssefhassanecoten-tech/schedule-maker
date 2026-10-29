@@ -37,7 +37,12 @@
     var holidaySet = applyHolidays(occ, holidays);
 
     var counterInfo = SM.counters.countLessons(occ);
-    var alloc = SM.rooms.allocate(occ, { registry: res.registry });
+    /* The room list is editable in Settings, so it is part of the model instead
+     * of always reading SM.config.ROOMS. Capacity follows its length. */
+    var rooms = (options.rooms && options.rooms.length)
+      ? options.rooms.slice()
+      : SM.config.ROOMS.slice();
+    var alloc = SM.rooms.allocate(occ, { registry: res.registry, rooms: rooms });
 
     // ---- indexes ----------------------------------------------------------
     var byWeek = {}, byDate = {}, byMonth = {};
@@ -49,7 +54,7 @@
     });
 
     // ---- requests ---------------------------------------------------------
-    var allRequests = SM.rooms.requests(occ);
+    var allRequests = SM.rooms.requests(occ, { capacity: rooms.length });
     var requestsByWeek = {};
     allRequests.forEach(function (r) {
       var w = U.weekOf(r.date, semester.firstMonday);
@@ -64,6 +69,7 @@
       }),
       occurrences: occ,
       registry: res.registry,
+      rooms: rooms,
       holidays: holidays,
       holidaySet: holidaySet,
       byWeek: byWeek,
@@ -110,7 +116,8 @@
     model.holidays = normalizeHolidays(model.holidays);
     model.holidaySet = applyHolidays(occ, model.holidays);
     SM.counters.countLessons(occ);
-    var alloc = SM.rooms.allocate(occ, { registry: model.registry });
+    var rooms = (model.rooms && model.rooms.length) ? model.rooms : SM.config.ROOMS;
+    var alloc = SM.rooms.allocate(occ, { registry: model.registry, rooms: rooms });
 
     model.byWeek = {}; model.byDate = {}; model.byMonth = {};
     occ.forEach(function (o) {
@@ -120,7 +127,7 @@
       (model.byMonth[mk] || (model.byMonth[mk] = [])).push(o);
     });
 
-    model.requests = SM.rooms.requests(occ);
+    model.requests = SM.rooms.requests(occ, { capacity: rooms.length });
     model.requestsByWeek = {};
     model.requests.forEach(function (r) {
       var w = U.weekOf(r.date, model.semester.firstMonday);

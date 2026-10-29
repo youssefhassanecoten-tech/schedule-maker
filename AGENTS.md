@@ -106,8 +106,8 @@ That updates `SM.config.VERSION`, `package.json`, the service-worker `CACHE` and
 `CHANGELOG.md` in one step. Also add the same change, in both languages, to the
 `entries` array in `src/changelog.js` — that is what the footer's version pill
 opens, and `npm run check:changelog` fails if the counts no longer match
-`SM.config.VERSION`. Documentation-only and housekeeping commits do not bump the
-version.
+`SM.config.VERSION` or if the newest entry's `version` is not the running
+version. Documentation-only and housekeeping commits do not bump the version.
 
 ## Before you change anything
 
