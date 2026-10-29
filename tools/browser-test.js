@@ -288,6 +288,7 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   const legal = await page.evaluate(() => ({
     privacy: document.querySelector('#footerPrivacy').getAttribute('href'),
     terms: document.querySelector('#footerTerms').getAttribute('href'),
+    versionHref: document.querySelector('#footerVersion').getAttribute('href'),
     consent: document.querySelector('#footerConsent').textContent.trim(),
     rights: document.querySelector('#footerRights').textContent.trim(),
     version: document.querySelector('#footerVersion').textContent.trim(),
@@ -296,6 +297,9 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   console.log('  footer:', JSON.stringify(legal));
   if (legal.privacy !== 'privacy.html' || legal.terms !== 'terms.html') {
     throw new Error('the footer legal links are wrong in Russian');
+  }
+  if (legal.versionHref !== 'changelog.html') {
+    throw new Error('the version pill does not open the Russian changelog');
   }
   if (!/соглашаетесь|agree/i.test(legal.consent)) throw new Error('the footer consent line is missing');
   if (!/Youssef Hassan/.test(legal.rights)) throw new Error('the footer rights line is missing');
@@ -308,11 +312,38 @@ const SRC = require('./paths').resolve('Raspisanie_versia_6.docx', process.argv[
   await page.waitForTimeout(450);
   const legalEn = await page.evaluate(() => ({
     privacy: document.querySelector('#footerPrivacy').getAttribute('href'),
-    terms: document.querySelector('#footerTerms').getAttribute('href')
+    terms: document.querySelector('#footerTerms').getAttribute('href'),
+    versionHref: document.querySelector('#footerVersion').getAttribute('href')
   }));
   console.log('  footer EN:', JSON.stringify(legalEn));
   if (legalEn.privacy !== 'privacy.en.html' || legalEn.terms !== 'terms.en.html') {
     throw new Error('the English footer links do not point at the English pages');
+  }
+  if (legalEn.versionHref !== 'changelog.en.html') {
+    throw new Error('the version pill does not open the English changelog');
+  }
+
+  /* What's new page: rendered from src/changelog.js in the page language. */
+  for (const [file, title, latest] of [
+    ['changelog.html', 'Что нового', 'Последние изменения'],
+    ['changelog.en.html', "What's new", 'Latest changes']
+  ]) {
+    await page.goto('file:///' + path.join(ROOT, file).replace(/\\/g, '/'));
+    const info = await page.evaluate(() => ({
+      h1: (document.querySelector('h1') || {}).textContent || '',
+      version: (document.querySelector('#clVersion') || {}).textContent || '',
+      configVersion: 'v' + ((window.SM && SM.config) ? SM.config.VERSION : '?'),
+      latestTitle: (document.querySelector('#clLatestTitle') || {}).textContent || '',
+      items: document.querySelectorAll('#clLatest .cl-item').length,
+      total: document.querySelectorAll('#clAll .cl-item').length
+    }));
+    console.log('  ' + file + ':', JSON.stringify(info));
+    if (info.h1.trim() !== title) throw new Error(file + ' headline is wrong');
+    if (info.latestTitle.trim() !== latest) throw new Error(file + ' is not in its language');
+    if (!info.items || !info.total) throw new Error(file + ' rendered no entries');
+    if (info.version.indexOf(info.configVersion) < 0) {
+      throw new Error(file + ' does not show the running version');
+    }
   }
 
   for (const [file, needle] of [

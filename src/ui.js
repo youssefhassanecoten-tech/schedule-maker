@@ -1268,7 +1268,8 @@
     $('#footerTerms').textContent = t('termsOfUse');
     $('#footerRights').textContent = t('footerRights');
     $('#footerVersion').textContent = 'v' + C.VERSION;
-    $('#footerVersion').title = 'Schedule Maker v' + C.VERSION;
+    $('#footerVersion').setAttribute('href', 'changelog' + legalSuffix + '.html');
+    $('#footerVersion').title = t('whatsNew') + ' — v' + C.VERSION;
     $$('[data-i18n]').forEach(function (n) { n.textContent = t(n.getAttribute('data-i18n')); });
     var ib = $('#installBtn');
     if (ib) ib.textContent = t('install');

@@ -8,7 +8,7 @@ very beginning**:
 MAJOR . MEDIUM . MINOR   =   count of major / medium / minor changes
 ```
 
-Current version: **5.9.7** — 5 major, 9 medium and 7 minor changes.
+Current version: **5.10.7** — 5 major, 10 medium and 7 minor changes.
 
 A *major* change is a new capability that changes what the product is or how it
 is delivered. A *medium* change is a new feature or a visible capability added to
@@ -36,7 +36,7 @@ in sync with `version` in `package.json`.
 5. **Holidays** — a whole date overrides its lessons, prints them red and removes
    them from the auditorium request. (`6af9381`)
 
-## Medium changes (9)
+## Medium changes (10)
 
 1. **Monthly document fidelity** — table measured against the department file,
    weeks overlap months, 5pt unbolded text, save-path panel. (`03fec0f`,
@@ -53,6 +53,8 @@ in sync with `version` in `package.json`.
 8. **Footer legal pages** — privacy and terms, per language, with acceptance by
    use. (`8b63dd8`, `bb15be1`)
 9. **Version display** in the footer and in Settings → About. (`03bf69e`)
+
+10. **What’s new page: click the version number in the footer to read what changed.** (2026-10-29)
 
 ## Minor changes (7)
 

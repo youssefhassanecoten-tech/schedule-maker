@@ -271,6 +271,7 @@ end time are preserved and flagged with `✎` so they can be confirmed by hand.
 
 ```
 index.html                 markup + script order (classic scripts, no bundler)
+changelog.html             what's new (Russian) / changelog.en.html (English)
 CHANGELOG.md               version = count of major / medium / minor changes
 SECURITY.md                security policy (local-only processing, reporting)
 ACCEPTABLE-USE-POLICY.md   who may use it, prohibited/commercial use, data rules
@@ -294,6 +295,8 @@ src/
     weekly.js  monthly.js  zayavka.js
   model.js                 orchestrates the pipeline, live-edit recompute
   package.js               folder tree + ZIP
+  changelog.js             bilingual change history for the what's-new page
+  changelog-page.js        renders changelog.html / changelog.en.html
   i18n.js                  Russian / English strings
   ui.js                    interface
 tools/                     Node test harnesses (not needed to run the app)
@@ -343,7 +346,16 @@ npm run version:bump -- <major|medium|minor> "<short description>"
 ```
 
 The script updates `SM.config.VERSION`, `package.json`, the service-worker
-`CACHE` and `CHANGELOG.md` together. Documentation-only changes do not bump it.
+`CACHE` and `CHANGELOG.md` together. Then add the same change, in both languages,
+to `src/changelog.js`; `npm run check:changelog` fails if the entry counts no
+longer match the version. Documentation-only changes do not bump it.
+
+### What's new
+
+Clicking the version pill in the footer opens `changelog.html` (Russian UI) or
+`changelog.en.html` (English UI). The page shows the latest changes and the full
+history grouped into major / medium / minor, rendered from the bilingual
+`src/changelog.js` data (`src/changelog-page.js`).
 
 ---
 

@@ -816,7 +816,63 @@ table.data tbody tr:hover { background: var(--surface-2); }
   font-family: var(--mono);
   font-size: 10.5px;
   letter-spacing: .04em;
+  text-decoration: none;
 }
+.footer-version:hover {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* --- what's new ---------------------------------------------------------- */
+.cl-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.cl-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.cl-top {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 5px;
+}
+.cl-level {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+.cl-level.major { color: #fff; background: var(--accent); }
+.cl-level.medium { color: var(--accent-text); background: var(--accent-soft); }
+.cl-level.minor { color: var(--text-soft); background: var(--bg-soft); }
+.cl-date {
+  font-size: 11px;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.cl-commit {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.cl-text {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+.cl-group { margin-top: 20px; }
+.cl-group h3 { font-size: 13.5px; margin: 0 0 6px; }
 
 /* ---------------------------------------------------------------- legal */
 .legal-page {
